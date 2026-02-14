@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Development database - persistent storage
+  db-dev:
+    image: postgres:16-alpine
+    container_name: security-logs-dev
+    environment:
+      POSTGRES_DB: ${DB_NAME:-security_logs}
+      POSTGRES_USER: ${DB_USER:-security_logs_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./sql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-security_logs_user} -d ${DB_NAME:-security_logs}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # Test database - ephemeral (in-memory for speed)
+  db-test:
+    image: postgres:16-alpine
+    container_name: security-logs-test
+    environment:
+      POSTGRES_DB: security_logs_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d security_logs_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Optional: pgAdmin for database management UI
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: security-logs-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@localhost.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db-dev:
+        condition: service_healthy
+    profiles:
+      - tools
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    name: security-logs-dev-data
+  pgadmin_data:
+    name: security-logs-pgadmin-data
