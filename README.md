@@ -13,12 +13,11 @@ Analysis of a simulated enterprise network under attack using the Austrian Insti
 
 ## Team
 
-| Name | Email | GitHub |
-|------|-------|--------|
-| Naman Sudan | namansudans@gmail.com | @namansudan |
-| River Roseveare-Hunt | river.roseveare-hunt@sjsu.edu | TBD |
-| Ishaan Shetty | ishaan.shetty@sjsu.edu | TBD |
-| TBD | TBD | TBD |
+| Name | GitHub |
+|------|--------|
+| Naman Sudan | [@NamanSudan](https://github.com/NamanSudan) |
+| River Roseveare-Hunt | [@DogmaHG](https://github.com/DogmaHG) |
+| Ishaan Shetty | [@Ishaanshetty](https://github.com/Ishaanshetty) |
 
 ## Tech Stack
 
