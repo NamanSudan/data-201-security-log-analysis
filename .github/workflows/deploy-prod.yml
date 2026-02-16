@@ -31,7 +31,7 @@ jobs:
         run: |
           if [ -n "$DATABASE_URL" ]; then
             echo "Running migrations against production database..."
-            alembic upgrade head
+            alembic -c alembic/alembic.ini upgrade head
             echo "Production migrations complete!"
           else
             echo "PROD_DATABASE_URL not set - skipping migrations"

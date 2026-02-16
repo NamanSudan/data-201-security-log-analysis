@@ -70,10 +70,10 @@ jobs:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/security_logs_test
         run: |
           # Run migrations to head
-          alembic upgrade head
+          alembic -c alembic/alembic.ini upgrade head
           
           # Check no pending migrations
-          alembic check
+          alembic -c alembic/alembic.ini check
       
       - name: Run tests
         env:
