@@ -11,6 +11,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from src.models import Base
 
 # This is the Alembic Config object
 config = context.config
@@ -19,10 +20,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Add your model's MetaData object here for 'autogenerate' support
-# from src.models import Base
-# target_metadata = Base.metadata
-target_metadata = None
+# Add your model's MetaData object here for 'autogenerate' support.
+# Keep model imports in src/models/__init__.py so metadata is fully populated.
+target_metadata = Base.metadata
 
 
 def get_database_url() -> str:
