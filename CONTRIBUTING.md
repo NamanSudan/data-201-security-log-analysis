@@ -81,7 +81,7 @@ Format: `<type>(<scope>): <description>`
 - [ ] Code follows project style guidelines
 - [ ] All tests pass locally (`pytest`)
 - [ ] Linting passes (`ruff check .`)
-- [ ] Migrations are valid (`alembic check`)
+- [ ] Migrations are valid (`alembic -c alembic/alembic.ini check`)
 - [ ] Documentation is updated if needed
 
 ### PR Template
@@ -120,11 +120,11 @@ DAT-XXX
 
 ```bash
 # Ensure your models are updated in src/models/
-alembic revision --autogenerate -m "descriptive_name"
+alembic -c alembic/alembic.ini revision --autogenerate -m "descriptive_name"
 
 # Review the generated migration file!
 # Then apply locally
-APP_ENV=dev alembic upgrade head
+APP_ENV=dev alembic -c alembic/alembic.ini upgrade head
 ```
 
 ### Migration Best Practices
@@ -181,7 +181,7 @@ ORDER BY event_count DESC;
 # Reset database
 docker-compose down -v
 docker-compose up -d
-alembic upgrade head
+alembic -c alembic/alembic.ini upgrade head
 ```
 
 ### Running Tests

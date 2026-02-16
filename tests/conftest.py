@@ -11,8 +11,7 @@ from sqlalchemy.orm import sessionmaker
 def database_url():
     """Get the test database URL."""
     return os.getenv(
-        "DATABASE_URL",
-        "postgresql://test_user:test_password@localhost:5433/security_logs_test"
+        "DATABASE_URL", "postgresql://test_user:test_password@localhost:5433/security_logs_test"
     )
 
 

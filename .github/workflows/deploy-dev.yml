@@ -31,7 +31,7 @@ jobs:
         run: |
           if [ -n "$DATABASE_URL" ]; then
             echo "Running migrations against dev database..."
-            alembic upgrade head
+            alembic -c alembic/alembic.ini upgrade head
             echo "Migrations complete!"
           else
             echo "DEV_DATABASE_URL not set - skipping migrations"

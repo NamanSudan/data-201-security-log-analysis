@@ -64,7 +64,7 @@ Analysis of a simulated enterprise network under attack using the Austrian Insti
 
 5. **Run database migrations**
    ```bash
-   alembic upgrade head
+   alembic -c alembic/alembic.ini upgrade head
    ```
 
 6. **Verify setup**
