@@ -6,6 +6,7 @@ alembic>=1.13.0
 # Data Processing
 pandas>=2.2.0
 numpy>=1.26.0
+pandasql>=0.7.3
 
 # Testing
 pytest>=8.0.0
@@ -16,6 +17,7 @@ ruff>=0.2.0
 
 # Notebooks
 jupyter>=1.0.0
+jupyterlab>=4.0.0
 ipykernel>=6.29.0
 
 # Visualization (for dashboard)
