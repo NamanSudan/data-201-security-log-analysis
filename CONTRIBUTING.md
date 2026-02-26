@@ -7,34 +7,45 @@ This document outlines our development workflow, branch naming conventions, and 
 All branches must follow this pattern:
 
 ```
-<type>/<linear-issue-id>-<short-description>
+<name>/<type>/DAT-XX-<short-description>
 ```
+
+- `name` is your first name (lowercase)
+- `type` is one of the branch types below
+- `DAT-XX` is the Linear issue ID
+- `short-description` is a few words separated by hyphens
 
 ### Branch Types
 
 | Prefix | Purpose | Example |
 |--------|---------|---------|
-| `feat/` | New features | `feat/DAT-42-add-dns-parser` |
-| `fix/` | Bug fixes | `fix/DAT-55-null-timestamp` |
-| `hotfix/` | Urgent production fixes | `hotfix/DAT-60-query-crash` |
-| `chore/` | Maintenance, dependencies | `chore/DAT-70-update-deps` |
-| `docs/` | Documentation only | `docs/DAT-80-update-readme` |
-| `refactor/` | Code restructure (no behavior change) | `refactor/DAT-90-clean-parsers` |
-| `test/` | Adding or updating tests | `test/DAT-100-add-unit-tests` |
-| `ci/` | CI/CD pipeline changes | `ci/DAT-110-add-lint-step` |
+| `explore/` | Data exploration, notebook analysis | `naman/explore/DAT-42-audit-log` |
+| `feat/` | New features, scripts, pipelines | `ishaan/feat/DAT-56-load-data` |
+| `fix/` | Bug fixes | `river/fix/DAT-55-null-timestamp` |
+| `hotfix/` | Urgent production fixes | `naman/hotfix/DAT-60-query-crash` |
+| `chore/` | Maintenance, dependencies, setup | `naman/chore/DAT-30-team-onboarding-setup` |
+| `docs/` | Documentation only | `river/docs/DAT-49-auth-log-findings` |
+| `refactor/` | Code restructure (no behavior change) | `naman/refactor/DAT-90-clean-parsers` |
+| `test/` | Adding or updating tests | `ishaan/test/DAT-100-add-unit-tests` |
+| `ci/` | CI/CD pipeline changes | `naman/ci/DAT-110-add-lint-step` |
 
 ### Examples
 
 ```bash
-# Creating a new feature branch
+# Creating an exploration branch for notebook analysis
 git checkout dev
 git pull origin dev
-git checkout -b feat/DAT-42-add-dns-parser
+git checkout -b naman/explore/DAT-48-labels-jsonl
 
-# Creating a bug fix branch
+# Creating a docs branch for a findings doc
 git checkout dev
 git pull origin dev
-git checkout -b fix/DAT-55-handle-null-timestamps
+git checkout -b river/docs/DAT-49-auth-log-findings
+
+# Creating a feature branch
+git checkout dev
+git pull origin dev
+git checkout -b ishaan/feat/DAT-56-load-data
 ```
 
 ## Git Workflow
