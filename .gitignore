@@ -168,3 +168,4 @@ alembic/versions/__pycache__/
 *.zip
 *.tar.gz
 *.7z
+02_explore_apache_error.ipynb
