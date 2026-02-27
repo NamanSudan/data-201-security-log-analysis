@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Development database - persistent storage
   db-dev:
@@ -40,7 +38,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # Optional: pgAdmin for database management UI
+  # pgAdmin for database management UI (localhost:5050)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: security-logs-pgadmin
@@ -55,8 +53,6 @@ services:
     depends_on:
       db-dev:
         condition: service_healthy
-    profiles:
-      - tools
     restart: unless-stopped
 
 volumes:
