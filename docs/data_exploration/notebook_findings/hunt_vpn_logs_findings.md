@@ -2,7 +2,7 @@
 
 Source: `russellmitchell/gather/vpn/logs/openvpn.log` (5,537 lines, OpenVPN server log format).
 Labels: `russellmitchell/labels/vpn/logs/openvpn.log` (28 labeled lines).
-Analysis notebook: `notebooks/09_explore_vpn_logs.ipynb` (to be created).
+Analysis notebook: `notebooks/04_explore_openvpn_logs.ipynb`.
 Target table: `vpn_events` (this file contributes 5,537 events; labels map into `attack_labels` during normalization).
 
 ---
