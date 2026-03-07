@@ -168,8 +168,6 @@ CREATE TABLE dns_events_raw (
     host                    VARCHAR(50),
     process                 VARCHAR(100),
     message                 TEXT NOT NULL,
-    dns_event_category      TEXT[],
-    dns_signature_matches   JSONB,
     created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -183,8 +181,6 @@ CREATE TABLE dns_events_raw (
     host                    VARCHAR(50),
     process                 VARCHAR(100),
     message                 TEXT NOT NULL,
-    dns_event_category      JSON,
-    dns_signature_matches   JSON,
     created_at              DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
