@@ -168,8 +168,6 @@ CREATE TABLE vpn_events_raw (
     event_timestamp         TIMESTAMP WITH TIME ZONE,
     client                  VARCHAR(100) NOT NULL,
     message                 TEXT NOT NULL,
-    vpn_event_category      TEXT[],
-    vpn_signature_matches   JSONB,
     created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -182,8 +180,6 @@ CREATE TABLE vpn_events_raw (
     event_timestamp         DATETIME,
     client                  VARCHAR(100) NOT NULL,
     message                 TEXT NOT NULL,
-    vpn_event_category      JSON,
-    vpn_signature_matches   JSON,
     created_at              DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
