@@ -177,8 +177,6 @@ CREATE TABLE auth_events_raw (
     process_name           VARCHAR(50) NOT NULL,
     pid                    INTEGER,
     message                TEXT NOT NULL,
-    auth_event_category    TEXT[],
-    auth_signature_matches JSONB,
     created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -193,8 +191,6 @@ CREATE TABLE auth_events_raw (
     process_name           VARCHAR(50) NOT NULL,
     pid                    INT,
     message                TEXT NOT NULL,
-    auth_event_category    JSON,
-    auth_signature_matches JSON,
     created_at             DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
