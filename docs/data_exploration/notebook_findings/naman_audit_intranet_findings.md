@@ -11,7 +11,7 @@ Target table: `audit_events_intranet_raw` (40 columns, 2,316 rows).
 
 ### 1NF Check
 
-**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation -- multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `groups TEXT` and `add_field_json TEXT` in `hosts_raw`.
+**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation-multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `groups TEXT` and `add_field_json TEXT` in `hosts_raw`.
 
 The `msg` field is non-null for ~86% of rows (PAM events, SERVICE events, USER_LOGIN, USER_CMD). It is NULL for LOGIN, AVC, SYSCALL, and PROCTITLE event types, which carry their fields as top-level key-value pairs.
 
@@ -128,7 +128,7 @@ Normalization decision: keep as separate rows (preserving 1:1 mapping) or merge 
 
 ## 6. DDL for Raw Loading
 
-40 columns. The `msg` field stores the full `msg='...'` string as a single TEXT blob (1NF violation -- normalization unpacks it). Type inference assumptions are documented in `type_inference_assumptions.md` (data-201/ root).
+40 columns. The `msg` field stores the full `msg='...'` string as a single TEXT blob (1NF violation-normalization unpacks it). Type inference assumptions are documented in `type_inference_assumptions.md` (data-201/ root).
 
 ```sql
 -- PostgreSQL

@@ -11,7 +11,7 @@ Target table: `audit_events_internal_share_raw` (40 columns, 732 rows).
 
 ### 1NF Check
 
-**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation -- multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `msg` in `audit_events_intranet_raw` (DAT-42) and `groups TEXT` in `hosts_raw`.
+**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation-multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `msg` in `audit_events_intranet_raw` (DAT-42) and `groups TEXT` in `hosts_raw`.
 
 The `msg` field is non-null for ~83.9% of rows (PAM events and SERVICE events). It is NULL for LOGIN, AVC, SYSCALL, and PROCTITLE event types, which carry their fields as top-level key-value pairs.
 
@@ -126,7 +126,7 @@ The attacker IP (172.19.131.174) does NOT appear in this log. All hostname=? and
 
 4 serials (193-196) span 3 lines each: AVC + SYSCALL + PROCTITLE. These are kernel-level AppArmor profile_replace events for dhclient, occurring on 2022-01-21 (day 1, well before the attack). Not attack-related. The remaining 720 serials each have exactly 1 line.
 
-Normalization decision: same as intranet_server -- keep as separate rows (preserving 1:1 line mapping).
+Normalization decision: same as intranet_server-keep as separate rows (preserving 1:1 line mapping).
 
 ---
 
@@ -246,4 +246,4 @@ CREATE TABLE audit_events_internal_share_raw (
 
 7. **Serial-grouped events:** 4 multi-line events (AVC+SYSCALL+PROCTITLE) share a serial. Same handling as intranet_server: keep as separate rows in the raw table.
 
-8. **No network context:** Unlike intranet_server (which has 21 rows with real IP 172.19.131.174 from SSH logins), the internal_share log has no real network addresses. All hostname=?, addr=?. The attacker's lateral movement to this host is not visible in auditd -- it would be visible in other log sources (e.g., auth.log or network logs).
+8. **No network context:** Unlike intranet_server (which has 21 rows with real IP 172.19.131.174 from SSH logins), the internal_share log has no real network addresses. All hostname=?, addr=?. The attacker's lateral movement to this host is not visible in auditd-it would be visible in other log sources (e.g., auth.log or network logs).

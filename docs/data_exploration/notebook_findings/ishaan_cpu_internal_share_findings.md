@@ -12,7 +12,7 @@ Target table: `system_cpu_events` (12 columns, 1,919 rows).
 
 **Atomic fields:** All columns produced by `json_normalize` are scalar values (timestamps, floats, integers, a single string). The raw metricbeat record is a deeply nested JSON object, but after flattening all values are atomic. No arrays or nested structures remain in the working DataFrame.
 
-**Repeating groups:** None. The CPU percentage fields (`cpu_total_pct`, `cpu_user_pct`, `cpu_system_pct`, etc.) are separate named columns measuring distinct CPU states — they are not a repeating group.
+**Repeating groups:** None. The CPU percentage fields (`cpu_total_pct`, `cpu_user_pct`, `cpu_system_pct`, etc.) are separate named columns measuring distinct CPU states - they are not a repeating group.
 
 **1NF status: satisfied.** All fields are atomic after flattening. Unlike the companion `audit_events_intranet_raw` table, there is no `msg` blob to unpack and no 1NF violation.
 
@@ -29,7 +29,7 @@ Two transitive dependencies are present:
 - `hostname → cpu_cores`: If cores are fixed per server, the hostname determines `cpu_cores`. Only one host (`internal-share`) appears in this dataset, so the dependency cannot be fully verified. It becomes significant if multiple hosts are added.
 - `cpu_total_pct` is derivable: `cpu_total_pct ≈ cpu_user_pct + cpu_system_pct + cpu_iowait_pct + cpu_steal_pct + cpu_softirq_pct`. It is a computed aggregate stored for query convenience, not independently measured.
 
-**3NF status: acceptable.** `cpu_total_pct` is stored denormalized for convenience. The `hostname → cpu_cores` dependency is deferred — if multiple hosts are added, `cpu_cores` should move to a hosts dimension table.
+**3NF status: acceptable.** `cpu_total_pct` is stored denormalized for convenience. The `hostname → cpu_cores` dependency is deferred - if multiple hosts are added, `cpu_cores` should move to a hosts dimension table.
 
 ### Preliminary Functional Dependencies
 
@@ -57,9 +57,9 @@ Two transitive dependencies are present:
 | `cpu_iowait_pct` | 1919/1919 | varies | Range 0.0000–0.9440. Peaks during exfiltration window. |
 | `cpu_steal_pct` | 1919/1919 | varies | Range 0.0000–0.0116. Very low throughout. |
 | `cpu_softirq_pct` | 1919/1919 | varies | Near-zero throughout. |
-| `cores` | 1919/1919 | 1 | Always 2. Constant — no analytical value in this table. |
+| `cores` | 1919/1919 | 1 | Always 2. Constant - no analytical value in this table. |
 | `event_duration_ns` | 1919/1919 | varies | Time metricbeat took to collect each record, in nanoseconds. |
-| `metricset_period_ms` | 1919/1919 | 1 | Always 45000 ms. Constant — could be dropped or moved to metadata table. |
+| `metricset_period_ms` | 1919/1919 | 1 | Always 45000 ms. Constant - could be dropped or moved to metadata table. |
 
 No null values appear in any column after flattening.
 
@@ -78,7 +78,7 @@ Descriptive stats across the full day. The mean and median (`p50`) for `cpu_tota
 | p99 | 0.3830 | 0.0878 | 0.2862 | 0.0087 |
 | max | 1.0000 | 0.7300 | 0.9600 | 0.9440 |
 
-The p99 jumps dramatically to 38.3%, far above the p95 of 7.9%, confirming that spike records are extreme outliers. 99% of the day sits below 8% total CPU — the remaining 1% (~19 records) accounts for the two attack windows.
+The p99 jumps dramatically to 38.3%, far above the p95 of 7.9%, confirming that spike records are extreme outliers. 99% of the day sits below 8% total CPU - the remaining 1% (~19 records) accounts for the two attack windows.
 
 ---
 
@@ -86,9 +86,9 @@ The p99 jumps dramatically to 38.3%, far above the p95 of 7.9%, confirming that 
 
 19 records where `cpu_total_pct > 0.50` across two distinct time windows. No direct annotation labels exist for CPU records; attack detection relies on threshold comparison cross-referenced with access log and audit log timestamps.
 
-- **Window 1 — 00:15–00:18 UTC** (5 records, ~3 minutes): `cpu_total_pct` pegged at 100% with very low `cpu_user_pct` (~2–5%), meaning the saturation is kernel-driven — consistent with a process monopolising the scheduler or triggering a tight kernel loop. `cpu_idle_pct` drops to exactly 0.000. Server returns to baseline by 00:19 UTC.
+- **Window 1 - 00:15–00:18 UTC** (5 records, ~3 minutes): `cpu_total_pct` pegged at 100% with very low `cpu_user_pct` (~2–5%), meaning the saturation is kernel-driven - consistent with a process monopolising the scheduler or triggering a tight kernel loop. `cpu_idle_pct` drops to exactly 0.000. Server returns to baseline by 00:19 UTC.
 
-- **Window 2 — 06:13–06:22 UTC** (14 records, ~10 minutes): A longer, sustained burst. The first samples show the same 100% kernel-saturation pattern as Window 1, then transition into high `cpu_user_pct` (up to 73%) and very high `cpu_iowait_pct` (up to 94.4%) — the CPU is simultaneously doing heavy user-space computation and waiting on disk I/O. This is consistent with file compression, encryption, or bulk data transfer. This window has the highest `cpu_iowait_pct` values seen across all logs in the dataset.
+- **Window 2 - 06:13–06:22 UTC** (14 records, ~10 minutes): A longer, sustained burst. The first samples show the same 100% kernel-saturation pattern as Window 1, then transition into high `cpu_user_pct` (up to 73%) and very high `cpu_iowait_pct` (up to 94.4%) - the CPU is simultaneously doing heavy user-space computation and waiting on disk I/O. This is consistent with file compression, encryption, or bulk data transfer. This window has the highest `cpu_iowait_pct` values seen across all logs in the dataset.
 
 Spike record count by window:
 
@@ -101,7 +101,7 @@ Spike record count by window:
 
 ## 5. DDL for Raw Loading
 
-12 columns. All pct values stored as `NUMERIC(6,4)` — source data has 4 decimal places of precision and values range 0.0–1.0. Note: `cpu_total_pct` reaches exactly 1.0000 during the attack, so the type must accommodate values up to 1.
+12 columns. All pct values stored as `NUMERIC(6,4)` - source data has 4 decimal places of precision and values range 0.0–1.0. Note: `cpu_total_pct` reaches exactly 1.0000 during the attack, so the type must accommodate values up to 1.
 
 ```sql
 -- PostgreSQL
@@ -147,7 +147,7 @@ CREATE TABLE system_cpu_events (
 
 2. **`cpu_total_pct` is a derived column:** It is approximately the sum of the other pct fields. Stored for query convenience but could be dropped in a strict normalized schema and computed as a view or generated column.
 
-3. **Two distinct attack windows:** Unlike a single spike in some companion logs, this file contains two bursts — one at **00:15 UTC** (kernel-saturated, `cpu_system_pct` dominant) and one at **06:13 UTC** (user+I/O heavy). The 06:13 window is the primary exfiltration window; the 00:15 window likely corresponds to initial tool execution or privilege escalation activity recorded in the intranet audit log.
+3. **Two distinct attack windows:** Unlike a single spike in some companion logs, this file contains two bursts - one at **00:15 UTC** (kernel-saturated, `cpu_system_pct` dominant) and one at **06:13 UTC** (user+I/O heavy). The 06:13 window is the primary exfiltration window; the 00:15 window likely corresponds to initial tool execution or privilege escalation activity recorded in the intranet audit log.
 
 4. **Same host as the 2022-01-22 log:** Both `2022-01-21` and `2022-01-22` originate from `internal-share`. The 2022-01-22 log shows no equivalent spike, confirming attack activity was confined to 2022-01-21.
 
