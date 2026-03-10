@@ -4,178 +4,178 @@
     <mxCell id="1" parent="0"/>
 
     <!-- Title -->
-    <mxCell id="title" value="ER Diagram: attack_labels Entity (Notebook 09, Pre-Normalization)" style="text;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="150" y="15" width="700" height="30" as="geometry"/>
+    <mxCell id="title" value="Pre-Normalized ER: Label Annotation (Labels Source, Notebook 09)" style="text;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="120" y="15" width="680" height="30" as="geometry"/>
     </mxCell>
-    <mxCell id="subtitle" value="Sources: 8 JSONL label files across 5 hosts (61,862 records) -- identical schema, combined with source_host + source_log provenance" style="text;fontSize=10;align=center;fontColor=#888888;" vertex="1" parent="1">
-      <mxGeometry x="150" y="43" width="700" height="18" as="geometry"/>
-    </mxCell>
-
-    <!-- ==================== ATTACK_LABELS_RAW ENTITY ==================== -->
-    <mxCell id="entity" value="attack_labels_raw" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="350" y="280" width="220" height="55" as="geometry"/>
+    <mxCell id="subtitle" value="Conceptual view: 61,862 labeled lines from 8 JSONL files across 5 hosts" style="text;fontSize=10;align=center;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="120" y="43" width="680" height="18" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== KEY ATTRIBUTES (top) ==================== -->
-    <mxCell id="row_id" value="row_id (PK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="410" y="100" width="120" height="40" as="geometry"/>
+    <!-- ====== Label Annotation Entity ====== -->
+    <mxCell id="entity" value="Label Annotation" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="320" y="270" width="230" height="50" as="geometry"/>
     </mxCell>
-    <mxCell id="ek1" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+
+    <!-- ====== Key Attributes (left side, underlined per Chen) ====== -->
+    <mxCell id="grp_ck" value="Composite Key" style="text;fontSize=9;fontStyle=2;fontColor=#888888;align=center;" vertex="1" parent="1">
+      <mxGeometry x="55" y="130" width="100" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="source_host" value="source_host" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="45" y="152" width="130" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_sh" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="470" y="140" as="sourcePoint"/>
-        <mxPoint x="460" y="280" as="targetPoint"/>
+        <mxPoint x="175" y="171" as="sourcePoint"/>
+        <mxPoint x="330" y="285" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <!-- Candidate Key group label -->
-    <mxCell id="grp_ck" value="Composite Candidate Key" style="text;fontSize=10;fontStyle=3;fontColor=#888888;align=left;" vertex="1" parent="1">
-      <mxGeometry x="50" y="140" width="160" height="18" as="geometry"/>
+    <mxCell id="source_log" value="source_log" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="55" y="202" width="120" height="38" as="geometry"/>
     </mxCell>
-
-    <mxCell id="source_host" value="source_host (CK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="60" y="165" width="140" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="eck1" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_sl" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="200" y="185" as="sourcePoint"/>
-        <mxPoint x="370" y="295" as="targetPoint"/>
+        <mxPoint x="175" y="221" as="sourcePoint"/>
+        <mxPoint x="330" y="293" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <mxCell id="source_log" value="source_log (CK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="70" y="220" width="130" height="40" as="geometry"/>
+    <mxCell id="line_number" value="line_number" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="45" y="252" width="130" height="38" as="geometry"/>
     </mxCell>
-    <mxCell id="eck2" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_ln" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="200" y="240" as="sourcePoint"/>
-        <mxPoint x="370" y="305" as="targetPoint"/>
+        <mxPoint x="175" y="271" as="sourcePoint"/>
+        <mxPoint x="330" y="301" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <mxCell id="line_number" value="line_number (CK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="60" y="275" width="140" height="40" as="geometry"/>
+    <!-- ====== Multivalued Attributes (below entity) ====== -->
+    <mxCell id="labels" value="labels" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="260" y="400" width="115" height="42" as="geometry"/>
     </mxCell>
-    <mxCell id="eck3" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_lbl" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="200" y="295" as="sourcePoint"/>
-        <mxPoint x="370" y="310" as="targetPoint"/>
+        <mxPoint x="318" y="400" as="sourcePoint"/>
+        <mxPoint x="395" y="320" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
-
-    <!-- ==================== MULTIVALUED ATTRIBUTES ==================== -->
-
-    <!-- labels_json (multivalued) -->
-    <mxCell id="labels_json" value="labels_json" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="280" y="420" width="130" height="45" as="geometry"/>
+    <mxCell id="labels_note" value="2-4 attack labels per record&#xa;22 distinct labels, 7 attack phases" style="text;fontSize=9;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="222" y="447" width="195" height="28" as="geometry"/>
     </mxCell>
-    <mxCell id="elm1" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+
+    <mxCell id="rules" value="rules" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="495" y="400" width="115" height="42" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_rul" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="345" y="420" as="sourcePoint"/>
-        <mxPoint x="430" y="335" as="targetPoint"/>
+        <mxPoint x="552" y="400" as="sourcePoint"/>
+        <mxPoint x="485" y="320" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
-    <mxCell id="labels_note" value="1NF violation: JSON array of 2-4&#xa;label strings per record&#xa;(22 unique labels, 21 combos)" style="text;fontSize=9;fontColor=#9673a6;align=left;" vertex="1" parent="1">
-      <mxGeometry x="230" y="470" width="200" height="40" as="geometry"/>
+    <mxCell id="rules_note" value="Label-to-rule arrays per record&#xa;36 distinct rules, M:N with labels" style="text;fontSize=9;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="462" y="447" width="190" height="28" as="geometry"/>
     </mxCell>
 
-    <!-- rules_json (multivalued) -->
-    <mxCell id="rules_json" value="rules_json" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="500" y="420" width="130" height="45" as="geometry"/>
+    <!-- ====== Log Line Entity (conceptual reference) ====== -->
+    <mxCell id="log_line" value="Log Line" style="shape=rectangle;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="690" y="108" width="130" height="45" as="geometry"/>
     </mxCell>
-    <mxCell id="elm2" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <mxPoint x="565" y="420" as="sourcePoint"/>
-        <mxPoint x="500" y="335" as="targetPoint"/>
-      </mxGeometry>
-    </mxCell>
-    <mxCell id="rules_note" value="1NF violation: nested JSON dict&#xa;mapping labels to rule arrays&#xa;(36 unique rules, 1-3 per label)" style="text;fontSize=9;fontColor=#9673a6;align=left;" vertex="1" parent="1">
-      <mxGeometry x="480" y="470" width="200" height="40" as="geometry"/>
+    <mxCell id="log_line_note" value="8 log types across 5 hosts&#xa;295,243 total raw lines" style="text;fontSize=8;fontColor=#888888;align=center;" vertex="1" parent="1">
+      <mxGeometry x="695" y="155" width="120" height="24" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== RELATIONSHIP TO HOSTS ==================== -->
-    <mxCell id="hosts_ref" value="hosts" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="660" y="100" width="100" height="45" as="geometry"/>
+    <!-- ====== annotates Relationship ====== -->
+    <mxCell id="rel_annotates" value="annotates" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="645" y="218" width="110" height="50" as="geometry"/>
     </mxCell>
-    <mxCell id="rel_labeled_in" value="labeled_in" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="630" y="210" width="120" height="55" as="geometry"/>
-    </mxCell>
+
+    <!-- Log Line to annotates: partial participation (single line), cardinality 1 -->
     <mxCell id="er1" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="710" y="145" as="sourcePoint"/>
-        <mxPoint x="690" y="210" as="targetPoint"/>
+        <mxPoint x="745" y="153" as="sourcePoint"/>
+        <mxPoint x="712" y="218" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
-    <mxCell id="card_1" value="1" style="text;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="713" y="168" width="20" height="18" as="geometry"/>
+    <mxCell id="card_log" value="1" style="text;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="748" y="172" width="20" height="18" as="geometry"/>
     </mxCell>
+
+    <!-- annotates to Label Annotation: total participation (bold line), cardinality 1 -->
     <mxCell id="er2" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=3;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="640" y="260" as="sourcePoint"/>
-        <mxPoint x="560" y="295" as="targetPoint"/>
+        <mxPoint x="650" y="258" as="sourcePoint"/>
+        <mxPoint x="550" y="288" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
-    <mxCell id="card_n" value="N" style="text;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="590" y="260" width="20" height="18" as="geometry"/>
+    <mxCell id="card_entity" value="1" style="text;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="588" y="260" width="20" height="18" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== FD ANNOTATIONS ==================== -->
-    <mxCell id="fd_bg" value="" style="rounded=1;fillColor=#fff8e1;strokeColor=#e6d5a0;opacity=90;" vertex="1" parent="1">
-      <mxGeometry x="620" y="340" width="280" height="80" as="geometry"/>
-    </mxCell>
-    <mxCell id="fd_title" value="Functional Dependencies" style="text;fontSize=10;fontStyle=1;align=left;fontColor=#8a7830;" vertex="1" parent="1">
-      <mxGeometry x="630" y="345" width="160" height="16" as="geometry"/>
-    </mxCell>
-    <mxCell id="fd1" value="FD1: (source_host, source_log, line_number) → labels, rules" style="text;fontSize=9;align=left;fontColor=#8a7830;" vertex="1" parent="1">
-      <mxGeometry x="630" y="363" width="260" height="16" as="geometry"/>
-    </mxCell>
-    <mxCell id="fd2" value="FD2: labels array ↔ rules dict keys (structural constraint)" style="text;fontSize=9;align=left;fontColor=#8a7830;" vertex="1" parent="1">
-      <mxGeometry x="630" y="381" width="260" height="16" as="geometry"/>
-    </mxCell>
-    <mxCell id="fd3" value="FD3: label_name → attack_phase (external taxonomy, 22→7)" style="text;fontSize=9;align=left;fontColor=#8a7830;" vertex="1" parent="1">
-      <mxGeometry x="630" y="399" width="260" height="16" as="geometry"/>
+    <!-- Participation note -->
+    <mxCell id="part_note" value="21% of log lines are labeled" style="text;fontSize=8;fontStyle=2;fontColor=#82b366;align=center;" vertex="1" parent="1">
+      <mxGeometry x="625" y="272" width="165" height="14" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== COVERAGE NOTE ==================== -->
-    <mxCell id="cov_note" value="Coverage: 61,862 labeled lines / 295,243 raw lines = 21.0%&#xa;Dominant: dnsmasq.log = 87.4% of labels (DNS exfiltration)" style="text;fontSize=9;fontColor=#888888;align=center;" vertex="1" parent="1">
-      <mxGeometry x="250" y="530" width="400" height="28" as="geometry"/>
+    <!-- ====== FD Box (secondary, smaller) ====== -->
+    <mxCell id="fd_bg" value="" style="rounded=1;fillColor=#fff8e1;strokeColor=#e6d5a0;opacity=85;" vertex="1" parent="1">
+      <mxGeometry x="635" y="330" width="255" height="78" as="geometry"/>
+    </mxCell>
+    <mxCell id="fd_title" value="Functional Dependencies (observed)" style="text;fontSize=9;fontStyle=1;align=left;fontColor=#8a7830;" vertex="1" parent="1">
+      <mxGeometry x="645" y="335" width="200" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="fd1" value="FD1: (source_host, source_log, line_number) -> labels, rules" style="text;fontSize=8;align=left;fontColor=#8a7830;" vertex="1" parent="1">
+      <mxGeometry x="645" y="352" width="240" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="fd2" value="FD2: labels entries = rules keys (structural integrity)" style="text;fontSize=8;align=left;fontColor=#8a7830;" vertex="1" parent="1">
+      <mxGeometry x="645" y="368" width="240" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="fd3" value="FD3: label_name -> attack_phase (external taxonomy, not in source)" style="text;fontSize=8;fontStyle=2;align=left;fontColor=#b0a060;" vertex="1" parent="1">
+      <mxGeometry x="645" y="384" width="240" height="14" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== LEGEND ==================== -->
+    <!-- ====== Coverage Stats ====== -->
+    <mxCell id="cov_note" value="61,862 labeled lines / 295,243 raw lines = 21.0% coverage | Dominant source: dnsmasq.log (87.4% of labels)" style="text;fontSize=9;fontColor=#888888;align=center;" vertex="1" parent="1">
+      <mxGeometry x="180" y="500" width="550" height="16" as="geometry"/>
+    </mxCell>
+
+    <!-- ====== Legend ====== -->
     <mxCell id="legend_bg" value="" style="rounded=1;fillColor=#1a1a2e;strokeColor=#444444;opacity=80;" vertex="1" parent="1">
-      <mxGeometry x="20" y="400" width="200" height="140" as="geometry"/>
+      <mxGeometry x="20" y="388" width="195" height="135" as="geometry"/>
     </mxCell>
-    <mxCell id="lt" value="Legend" style="text;fontSize=12;fontStyle=1;align=left;fontColor=#ffffff;" vertex="1" parent="1">
-      <mxGeometry x="30" y="405" width="60" height="18" as="geometry"/>
+    <mxCell id="lt" value="Legend (Chen Notation)" style="text;fontSize=10;fontStyle=1;align=left;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="30" y="393" width="150" height="16" as="geometry"/>
     </mxCell>
-    <mxCell id="l1s" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-      <mxGeometry x="30" y="430" width="16" height="11" as="geometry"/>
+    <mxCell id="l1s" value="" style="shape=rectangle;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="30" y="416" width="16" height="11" as="geometry"/>
     </mxCell>
-    <mxCell id="l1t" value="Key Attribute (underlined)" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="52" y="427" width="140" height="16" as="geometry"/>
+    <mxCell id="l1t" value="Strong Entity" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="52" y="413" width="100" height="16" as="geometry"/>
     </mxCell>
-    <mxCell id="l2s" value="" style="shape=ellipse;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-      <mxGeometry x="30" y="448" width="16" height="11" as="geometry"/>
+    <mxCell id="l2s" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="30" y="434" width="16" height="11" as="geometry"/>
     </mxCell>
-    <mxCell id="l2t" value="Simple Attribute" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="52" y="445" width="100" height="16" as="geometry"/>
+    <mxCell id="l2t" value="Key Attribute (underlined)" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="52" y="431" width="140" height="16" as="geometry"/>
     </mxCell>
     <mxCell id="l3s" value="" style="shape=doubleEllipse;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-      <mxGeometry x="30" y="466" width="16" height="11" as="geometry"/>
+      <mxGeometry x="30" y="452" width="16" height="11" as="geometry"/>
     </mxCell>
-    <mxCell id="l3t" value="Multivalued (1NF violation)" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="52" y="463" width="140" height="16" as="geometry"/>
+    <mxCell id="l3t" value="Multivalued Attribute" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="52" y="449" width="120" height="16" as="geometry"/>
     </mxCell>
     <mxCell id="l4s" value="" style="shape=rhombus;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-      <mxGeometry x="30" y="484" width="16" height="11" as="geometry"/>
+      <mxGeometry x="30" y="470" width="16" height="11" as="geometry"/>
     </mxCell>
     <mxCell id="l4t" value="Relationship" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="52" y="481" width="80" height="16" as="geometry"/>
+      <mxGeometry x="52" y="467" width="80" height="16" as="geometry"/>
     </mxCell>
     <mxCell id="l5t" value="Bold line = Total Participation" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="30" y="499" width="160" height="16" as="geometry"/>
+      <mxGeometry x="30" y="488" width="160" height="16" as="geometry"/>
     </mxCell>
-    <mxCell id="l6t" value="CK = Candidate Key" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="30" y="516" width="120" height="16" as="geometry"/>
+    <mxCell id="l6t" value="Thin line = Partial Participation" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="30" y="504" width="170" height="16" as="geometry"/>
     </mxCell>
 
   </root>

@@ -4,296 +4,327 @@
     <mxCell id="1" parent="0"/>
 
     <!-- Title -->
-    <mxCell id="title" value="ER Diagram: hosts Entity (Notebook 01, Pre-Normalization)" style="text;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="200" y="20" width="500" height="30" as="geometry"/>
+    <mxCell id="title" value="Pre-Normalized ER Diagram: Host (servers.yaml)" style="text;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="140" y="20" width="600" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="subtitle" value="Source: servers.yaml | 22 hosts, 66 log configs" style="text;fontSize=11;align=center;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="240" y="48" width="400" height="20" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== HOSTS ENTITY ==================== -->
-    <mxCell id="hosts" value="hosts" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="380" y="280" width="120" height="50" as="geometry"/>
+    <!-- ==================== HOST ENTITY ==================== -->
+    <mxCell id="host_ent" value="Host" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="370" y="280" width="140" height="50" as="geometry"/>
     </mxCell>
 
-    <!-- === KEY ATTRIBUTES (top row) === -->
-    <mxCell id="host_id" value="host_id (PK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="120" y="80" width="120" height="40" as="geometry"/>
+    <!-- === KEY ATTRIBUTES (underlined, no PK/CK labels) === -->
+    <mxCell id="host_key" value="host_key" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="160" y="100" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e1" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_hk" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="180" y="120" as="sourcePoint"/>
+        <mxPoint x="210" y="140" as="sourcePoint"/>
+        <mxPoint x="400" y="280" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="hostname_attr" value="hostname" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="300" y="100" width="100" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_hn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="350" y="140" as="sourcePoint"/>
         <mxPoint x="420" y="280" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <mxCell id="host_key" value="host_key (CK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="270" y="80" width="120" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="e2" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <mxPoint x="330" y="120" as="sourcePoint"/>
-        <mxPoint x="430" y="280" as="targetPoint"/>
-      </mxGeometry>
-    </mxCell>
-
-    <mxCell id="hostname_attr" value="hostname (CK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="420" y="80" width="130" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="e3" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <mxPoint x="485" y="120" as="sourcePoint"/>
-        <mxPoint x="450" y="280" as="targetPoint"/>
-      </mxGeometry>
-    </mxCell>
-
+    <!-- === SIMPLE ATTRIBUTES (top right) === -->
     <mxCell id="username" value="username" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="580" y="80" width="100" height="40" as="geometry"/>
+      <mxGeometry x="470" y="100" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e4" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_un" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="630" y="120" as="sourcePoint"/>
-        <mxPoint x="470" y="280" as="targetPoint"/>
+        <mxPoint x="520" y="140" as="sourcePoint"/>
+        <mxPoint x="460" y="280" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="openvpn_user" value="openvpn_user" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="710" y="80" width="120" height="40" as="geometry"/>
+      <mxGeometry x="610" y="100" width="120" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e5" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_ov" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="770" y="120" as="sourcePoint"/>
+        <mxPoint x="670" y="140" as="sourcePoint"/>
         <mxPoint x="490" y="280" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <!-- === LEFT SIDE ATTRIBUTES === -->
     <mxCell id="distribution" value="distribution" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="80" y="220" width="110" height="40" as="geometry"/>
+      <mxGeometry x="80" y="210" width="110" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e6" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_dist" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="190" y="240" as="sourcePoint"/>
-        <mxPoint x="380" y="295" as="targetPoint"/>
+        <mxPoint x="190" y="230" as="sourcePoint"/>
+        <mxPoint x="370" y="295" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="dist_release" value="distribution_release" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="60" y="280" width="150" height="40" as="geometry"/>
+      <mxGeometry x="55" y="270" width="155" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e7" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_dr" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="210" y="300" as="sourcePoint"/>
-        <mxPoint x="380" y="305" as="targetPoint"/>
+        <mxPoint x="210" y="290" as="sourcePoint"/>
+        <mxPoint x="370" y="305" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="dist_version" value="distribution_version" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="60" y="340" width="150" height="40" as="geometry"/>
+      <mxGeometry x="55" y="330" width="155" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e8" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_dv" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="210" y="360" as="sourcePoint"/>
-        <mxPoint x="380" y="315" as="targetPoint"/>
+        <mxPoint x="210" y="350" as="sourcePoint"/>
+        <mxPoint x="370" y="315" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <!-- === RIGHT SIDE ATTRIBUTES === -->
     <mxCell id="def_ipv4" value="default_ipv4_address" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="640" y="200" width="150" height="40" as="geometry"/>
+      <mxGeometry x="650" y="210" width="155" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e9" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_ip4" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="640" y="220" as="sourcePoint"/>
-        <mxPoint x="500" y="290" as="targetPoint"/>
+        <mxPoint x="650" y="230" as="sourcePoint"/>
+        <mxPoint x="510" y="295" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="def_ipv6" value="default_ipv6_address" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="640" y="260" width="150" height="40" as="geometry"/>
+      <mxGeometry x="650" y="270" width="155" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e10" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_ip6" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="640" y="280" as="sourcePoint"/>
-        <mxPoint x="500" y="300" as="targetPoint"/>
+        <mxPoint x="650" y="290" as="sourcePoint"/>
+        <mxPoint x="510" y="305" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="timezone" value="timezone" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="660" y="320" width="100" height="40" as="geometry"/>
+      <mxGeometry x="670" y="330" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e11" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_tz" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="660" y="340" as="sourcePoint"/>
-        <mxPoint x="500" y="310" as="targetPoint"/>
+        <mxPoint x="670" y="350" as="sourcePoint"/>
+        <mxPoint x="510" y="315" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <!-- === MULTIVALUED ATTRIBUTES (bottom) === -->
+    <!-- === MULTIVALUED ATTRIBUTES (split left/right to clear center line) === -->
     <mxCell id="groups" value="groups" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="170" y="420" width="100" height="40" as="geometry"/>
+      <mxGeometry x="130" y="420" width="90" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e12" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_gr" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="220" y="420" as="sourcePoint"/>
-        <mxPoint x="410" y="330" as="targetPoint"/>
+        <mxPoint x="175" y="420" as="sourcePoint"/>
+        <mxPoint x="400" y="330" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="fqdns" value="fqdns" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="290" y="420" width="100" height="40" as="geometry"/>
+      <mxGeometry x="240" y="420" width="80" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e13" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_fq" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="340" y="420" as="sourcePoint"/>
-        <mxPoint x="425" y="330" as="targetPoint"/>
+        <mxPoint x="280" y="420" as="sourcePoint"/>
+        <mxPoint x="415" y="330" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="ipv4s" value="ipv4_addresses" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="410" y="420" width="120" height="40" as="geometry"/>
+      <mxGeometry x="540" y="420" width="120" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e14" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_i4" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="470" y="420" as="sourcePoint"/>
-        <mxPoint x="450" y="330" as="targetPoint"/>
-      </mxGeometry>
-    </mxCell>
-
-    <mxCell id="ipv6s" value="ipv6_addresses" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="550" y="420" width="120" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="e15" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <mxPoint x="610" y="420" as="sourcePoint"/>
+        <mxPoint x="600" y="420" as="sourcePoint"/>
         <mxPoint x="470" y="330" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <!-- ==================== RELATIONSHIP DIAMOND ==================== -->
-    <mxCell id="rel_has" value="has_config" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
-      <mxGeometry x="390" y="500" width="120" height="60" as="geometry"/>
+    <mxCell id="ipv6s" value="ipv6_addresses" style="shape=doubleEllipse;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="680" y="420" width="120" height="40" as="geometry"/>
     </mxCell>
+    <mxCell id="e_i6" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="740" y="420" as="sourcePoint"/>
+        <mxPoint x="485" y="330" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ==================== IDENTIFYING RELATIONSHIP (double diamond) ==================== -->
+    <mxCell id="rel_outer" value="" style="shape=rhombus;whiteSpace=wrap;fillColor=none;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="380" y="505" width="120" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="rel_has" value="has" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="390" y="512" width="100" height="46" as="geometry"/>
+    </mxCell>
+
+    <!-- Host to relationship: single line = partial participation -->
     <mxCell id="e_h_rel" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
         <mxPoint x="440" y="330" as="sourcePoint"/>
-        <mxPoint x="450" y="500" as="targetPoint"/>
+        <mxPoint x="440" y="505" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
     <mxCell id="card_1" value="1" style="text;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="445" y="470" width="20" height="20" as="geometry"/>
+      <mxGeometry x="445" y="478" width="20" height="20" as="geometry"/>
     </mxCell>
+
+    <!-- Relationship to weak entity: bold line = total participation -->
     <mxCell id="e_rel_hlc" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=3;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="450" y="560" as="sourcePoint"/>
-        <mxPoint x="450" y="610" as="targetPoint"/>
+        <mxPoint x="440" y="565" as="sourcePoint"/>
+        <mxPoint x="440" y="635" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
     <mxCell id="card_n" value="N" style="text;fontSize=13;fontStyle=1;align=center;" vertex="1" parent="1">
-      <mxGeometry x="455" y="575" width="20" height="20" as="geometry"/>
+      <mxGeometry x="445" y="585" width="20" height="20" as="geometry"/>
     </mxCell>
 
-    <!-- ==================== HOST_LOG_CONFIGS ENTITY ==================== -->
-    <mxCell id="hlc" value="host_log_configs" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="370" y="610" width="160" height="50" as="geometry"/>
+    <!-- ==================== HOST LOG CONFIG WEAK ENTITY (double rectangle) ==================== -->
+    <mxCell id="hlc_outer" value="" style="shape=rectangle;whiteSpace=wrap;fillColor=none;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="345" y="635" width="190" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="hlc" value="Host Log Config" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="352" y="642" width="176" height="41" as="geometry"/>
     </mxCell>
 
-    <mxCell id="config_id" value="config_id (PK)" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="140" y="590" width="120" height="40" as="geometry"/>
+    <!-- Partial key: dashed oval + underlined text -->
+    <mxCell id="log_path" value="log_path" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=11;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="110" y="625" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e16" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_lp" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="260" y="610" as="sourcePoint"/>
-        <mxPoint x="370" y="630" as="targetPoint"/>
+        <mxPoint x="210" y="645" as="sourcePoint"/>
+        <mxPoint x="345" y="655" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <mxCell id="log_path" value="log_path" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="120" y="650" width="100" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="e17" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <mxPoint x="220" y="670" as="sourcePoint"/>
-        <mxPoint x="370" y="640" as="targetPoint"/>
-      </mxGeometry>
-    </mxCell>
-
+    <!-- Simple attributes of Host Log Config -->
     <mxCell id="log_type" value="log_type" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="140" y="710" width="100" height="40" as="geometry"/>
+      <mxGeometry x="100" y="685" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e18" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_lt" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="240" y="725" as="sourcePoint"/>
-        <mxPoint x="370" y="650" as="targetPoint"/>
+        <mxPoint x="200" y="705" as="sourcePoint"/>
+        <mxPoint x="345" y="670" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="codec" value="codec" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="620" y="590" width="90" height="40" as="geometry"/>
+      <mxGeometry x="640" y="625" width="90" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e19" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_co" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="620" y="610" as="sourcePoint"/>
-        <mxPoint x="530" y="630" as="targetPoint"/>
+        <mxPoint x="640" y="645" as="sourcePoint"/>
+        <mxPoint x="535" y="655" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <mxCell id="file_chunk" value="file_chunk_size" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="630" y="650" width="120" height="40" as="geometry"/>
+      <mxGeometry x="630" y="685" width="125" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e20" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_fc" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="630" y="670" as="sourcePoint"/>
-        <mxPoint x="530" y="640" as="targetPoint"/>
+        <mxPoint x="630" y="705" as="sourcePoint"/>
+        <mxPoint x="535" y="665" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
-    <mxCell id="add_field" value="add_field_json" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;dashed=1;" vertex="1" parent="1">
-      <mxGeometry x="620" y="710" width="120" height="40" as="geometry"/>
+    <mxCell id="add_field" value="add_field" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="650" y="745" width="100" height="40" as="geometry"/>
     </mxCell>
-    <mxCell id="e21" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+    <mxCell id="e_af" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry">
-        <mxPoint x="620" y="725" as="sourcePoint"/>
-        <mxPoint x="530" y="650" as="targetPoint"/>
+        <mxPoint x="650" y="765" as="sourcePoint"/>
+        <mxPoint x="535" y="675" as="targetPoint"/>
       </mxGeometry>
     </mxCell>
 
     <!-- ==================== LEGEND ==================== -->
     <mxCell id="legend_bg" value="" style="rounded=1;fillColor=#1a1a2e;strokeColor=#444444;opacity=80;" vertex="1" parent="1">
-      <mxGeometry x="20" y="500" width="200" height="160" as="geometry"/>
+      <mxGeometry x="20" y="810" width="250" height="200" as="geometry"/>
     </mxCell>
-    <mxCell id="legend_title" value="Legend" style="text;fontSize=13;fontStyle=1;align=left;fontColor=#ffffff;" vertex="1" parent="1">
-      <mxGeometry x="35" y="505" width="80" height="20" as="geometry"/>
+    <mxCell id="legend_title" value="Legend (Chen Notation)" style="text;fontSize=12;fontStyle=1;align=left;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="35" y="815" width="180" height="20" as="geometry"/>
     </mxCell>
+
     <mxCell id="leg1" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-      <mxGeometry x="35" y="533" width="18" height="12" as="geometry"/>
+      <mxGeometry x="35" y="843" width="18" height="12" as="geometry"/>
     </mxCell>
     <mxCell id="leg1t" value="Key Attribute (underlined)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="60" y="528" width="150" height="20" as="geometry"/>
+      <mxGeometry x="60" y="838" width="160" height="20" as="geometry"/>
     </mxCell>
+
     <mxCell id="leg2" value="" style="shape=ellipse;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-      <mxGeometry x="35" y="553" width="18" height="12" as="geometry"/>
+      <mxGeometry x="35" y="863" width="18" height="12" as="geometry"/>
     </mxCell>
     <mxCell id="leg2t" value="Simple Attribute" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="60" y="548" width="100" height="20" as="geometry"/>
+      <mxGeometry x="60" y="858" width="100" height="20" as="geometry"/>
     </mxCell>
+
     <mxCell id="leg3" value="" style="shape=doubleEllipse;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-      <mxGeometry x="35" y="573" width="18" height="12" as="geometry"/>
+      <mxGeometry x="35" y="883" width="18" height="12" as="geometry"/>
     </mxCell>
     <mxCell id="leg3t" value="Multivalued Attribute" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="60" y="568" width="120" height="20" as="geometry"/>
+      <mxGeometry x="60" y="878" width="130" height="20" as="geometry"/>
     </mxCell>
-    <mxCell id="leg4" value="" style="shape=rhombus;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-      <mxGeometry x="35" y="593" width="18" height="12" as="geometry"/>
+
+    <mxCell id="leg4" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="35" y="903" width="18" height="12" as="geometry"/>
     </mxCell>
-    <mxCell id="leg4t" value="Relationship" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="60" y="588" width="80" height="20" as="geometry"/>
+    <mxCell id="leg4t" value="Partial Key (dashed, underlined)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="60" y="898" width="185" height="20" as="geometry"/>
     </mxCell>
-    <mxCell id="leg5t" value="Bold line = Total Participation" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="35" y="608" width="170" height="20" as="geometry"/>
+
+    <mxCell id="leg5_outer" value="" style="shape=rectangle;fillColor=none;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="33" y="921" width="22" height="14" as="geometry"/>
     </mxCell>
-    <mxCell id="leg6t" value="CK = Candidate Key" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="35" y="628" width="120" height="20" as="geometry"/>
+    <mxCell id="leg5_inner" value="" style="shape=rectangle;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="36" y="924" width="16" height="8" as="geometry"/>
     </mxCell>
-    <mxCell id="leg7t" value="Dashed oval = 1NF violation (blob)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
-      <mxGeometry x="35" y="648" width="180" height="20" as="geometry"/>
+    <mxCell id="leg5t" value="Weak Entity (double rectangle)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="60" y="918" width="190" height="20" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg6_outer" value="" style="shape=rhombus;fillColor=none;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="33" y="941" width="22" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg6_inner" value="" style="shape=rhombus;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="36" y="944" width="16" height="8" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg6t" value="Identifying Relationship (double diamond)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="60" y="938" width="210" height="20" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg7_line" value="" style="endArrow=none;strokeColor=#cccccc;strokeWidth=3;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="35" y="968" as="sourcePoint"/>
+        <mxPoint x="52" y="968" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg7t" value="Total Participation (bold line)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="60" y="960" width="185" height="20" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg8_line" value="" style="endArrow=none;strokeColor=#cccccc;strokeWidth=1;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="35" y="988" as="sourcePoint"/>
+        <mxPoint x="52" y="988" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg8t" value="Partial Participation (single line)" style="text;fontSize=10;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="60" y="980" width="190" height="20" as="geometry"/>
     </mxCell>
 
   </root>
