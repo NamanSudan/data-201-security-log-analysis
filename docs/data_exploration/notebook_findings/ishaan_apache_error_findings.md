@@ -11,7 +11,7 @@ Target table: `http_events` (9 columns, 35 rows).
 
 ### 1NF Check
 
-**Multi-valued field:** The `labels` column stores a list of attack-phase tags per record (e.g. `[attacker_http, foothold, dirb]`). This is a 1NF violation — multiple distinct values packed into a single cell.
+**Multi-valued field:** The `labels` column stores a list of attack-phase tags per record (e.g. `[attacker_http, foothold, dirb]`). This is a 1NF violation - multiple distinct values packed into a single cell.
 
 **Repeating groups:** The `rules` column is a nested dictionary mapping each label to a list of matched signatures (e.g. `{"dirb": ["attacker.foothold.apache.error.dirb"]}`). Both `labels` and `rules` violate 1NF by storing collections in a single field.
 
@@ -25,7 +25,7 @@ The raw table uses a single-column surrogate primary key (`http_event_id`). Part
 
 ### 3NF Check
 
-**Transitive dependency:** The `log_level` field encodes two distinct attributes — the Apache module (e.g. `authz_core`, `php7`, `negotiation`) and the severity level (e.g. `error`). This results in a dependency chain `http_event_id -> log_level -> {module, severity}`, which is a 3NF violation.
+**Transitive dependency:** The `log_level` field encodes two distinct attributes - the Apache module (e.g. `authz_core`, `php7`, `negotiation`) and the severity level (e.g. `error`). This results in a dependency chain `http_event_id -> log_level -> {module, severity}`, which is a 3NF violation.
 
 **3NF status: violated.** Resolution direction: split `log_level` into separate `module VARCHAR` and `severity VARCHAR` columns during normalization.
 
@@ -72,9 +72,9 @@ The raw table uses a single-column surrogate primary key (`http_event_id`). Part
 
 | log_level | Count | Module | Severity |
 |---|---|---|---|
-| `authz_core:error` | — | authz_core | error |
-| `php7:error` | — | php7 | error |
-| `negotiation:error` | — | negotiation | error |
+| `authz_core:error` | - | authz_core | error |
+| `php7:error` | - | php7 | error |
+| `negotiation:error` | - | negotiation | error |
 
 All observed records carry severity `error`. Module encodes the Apache subsystem that generated the event. Longest observed value is `negotiation:error` (18 chars); `VARCHAR(50)` provides sufficient headroom.
 
@@ -82,7 +82,7 @@ All observed records carry severity `error`. Module encodes the Apache subsystem
 
 ## 4. Attack Events (Ground Truth Labels)
 
-All 35 records are labeled — this file is 100% attack traffic. Every line represents attacker activity from IP `172.19.131.174` against the intranet server.
+All 35 records are labeled - this file is 100% attack traffic. Every line represents attacker activity from IP `172.19.131.174` against the intranet server.
 
 **Attack tool signatures observed:**
 
@@ -93,7 +93,7 @@ All 35 records are labeled — this file is 100% attack traffic. Every line repr
 | `dirb` | ~most | Reconnaissance | Directory brute-force scanning (dirb tool) |
 | `wpscan` | subset | Reconnaissance | WordPress vulnerability scanning |
 
-**Structural co-occurrence:** `attacker_http` and `foothold` appear on every record. No single-label records exist — every line carries at least 2 labels. This structural co-occurrence should inform the normalized label table design.
+**Structural co-occurrence:** `attacker_http` and `foothold` appear on every record. No single-label records exist - every line carries at least 2 labels. This structural co-occurrence should inform the normalized label table design.
 
 **Attack sequence summary:** The attacker performed directory enumeration (`dirb`) and WordPress vulnerability scanning (`wpscan`) against the intranet server, all originating from a single IP.
 
@@ -117,7 +117,7 @@ All 35 records are labeled — this file is 100% attack traffic. Every line repr
 
 ## 6. DDL for Raw Loading
 
-9 columns. The `labels` and `rules` fields store collections as-is (1NF violations — normalization unpacks them).
+9 columns. The `labels` and `rules` fields store collections as-is (1NF violations - normalization unpacks them).
 
 ```sql
 -- PostgreSQL
