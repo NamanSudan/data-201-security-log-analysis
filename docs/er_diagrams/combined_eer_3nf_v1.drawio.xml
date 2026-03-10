@@ -1,0 +1,1232 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <!-- ==================== TITLE ==================== -->
+    <mxCell id="title" value="Combined 3NF EER Diagram (Conceptual Target)" style="text;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="400" y="10" width="700" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="subtitle" value="Chen / EER Notation | AIT Log Data Set V2.0 | Notebooks 01, 05, 07, 09" style="text;fontSize=11;align=center;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="400" y="38" width="700" height="20" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== HOST DOMAIN (top-left) ==================== -->
+    <!-- ================================================================ -->
+
+    <!-- HOST ENTITY -->
+    <mxCell id="host" value="Host" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="160" y="200" width="130" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- Host key attributes -->
+    <mxCell id="host_key" value="host_key" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="80" y="110" width="95" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_hk" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="128" y="145" as="sourcePoint"/>
+        <mxPoint x="195" y="200" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="hostname_a" value="hostname" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="195" y="110" width="95" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_hn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="243" y="145" as="sourcePoint"/>
+        <mxPoint x="225" y="200" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Host simple attributes (right of entity) -->
+    <mxCell id="username_a" value="username" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="310" y="120" width="85" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_un" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="340" y="150" as="sourcePoint"/>
+        <mxPoint x="270" y="200" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="def_ipv4_a" value="default_ipv4_address" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="310" y="160" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ip4" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="310" y="174" as="sourcePoint"/>
+        <mxPoint x="290" y="210" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="def_ipv6_a" value="default_ipv6_address" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="310" y="196" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ip6" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="310" y="210" as="sourcePoint"/>
+        <mxPoint x="290" y="220" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="openvpn_a" value="openvpn_user" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="310" y="232" width="100" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ov" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="310" y="246" as="sourcePoint"/>
+        <mxPoint x="290" y="235" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Host left-side: distribution_release -->
+    <mxCell id="dist_release_a" value="distribution_release" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="10" y="200" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_dr" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="130" y="214" as="sourcePoint"/>
+        <mxPoint x="160" y="225" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ==================== DISTRIBUTION (3NF lookup entity) ==================== -->
+    <mxCell id="distribution_ent" value="Distribution" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="20" y="310" width="120" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="dist_rel_key" value="distribution_release" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="5" y="370" width="120" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_drk" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="65" y="370" as="sourcePoint"/>
+        <mxPoint x="75" y="350" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="dist_name_a" value="distribution" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="135" y="355" width="90" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_dn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="135" y="369" as="sourcePoint"/>
+        <mxPoint x="140" y="340" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="dist_ver_a" value="distribution_version" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="135" y="390" width="115" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_dv" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="135" y="404" as="sourcePoint"/>
+        <mxPoint x="140" y="350" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Relationship: Host runs_on Distribution (N:1) -->
+    <mxCell id="rel_runs_on" value="runs on" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="100" y="260" width="90" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_ro" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=2;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="190" y="250" as="sourcePoint"/>
+        <mxPoint x="165" y="260" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_hro_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="170" y="253" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ro_d" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="120" y="300" as="sourcePoint"/>
+        <mxPoint x="95" y="310" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_hro_1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="98" y="300" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="note_3nf" value="3NF: distribution_release ->&#xa;distribution, distribution_version&#xa;(transitive dependency resolved)" style="text;fontSize=7;fontColor=#82b366;align=left;" vertex="1" parent="1">
+      <mxGeometry x="5" y="425" width="180" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== HOST GROUP (1NF resolution) ==================== -->
+    <mxCell id="group_ent" value="Group" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="60" y="490" width="100" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="group_name_a" value="group_name" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="35" y="545" width="95" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_gn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="83" y="545" as="sourcePoint"/>
+        <mxPoint x="100" y="528" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="rel_belongs_to" value="belongs to" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="185" y="475" width="90" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_bg" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="225" y="250" as="sourcePoint"/>
+        <mxPoint x="235" y="475" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_bg_m" value="M" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="238" y="440" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_bg_g" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="185" y="500" as="sourcePoint"/>
+        <mxPoint x="160" y="505" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_bg_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="162" y="492" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="note_1nf_grp" value="1NF: groups array resolved" style="text;fontSize=7;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="145" y="518" width="140" height="12" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== HOST FQDN (1NF resolution) ==================== -->
+    <mxCell id="fqdn_ent" value="FQDN" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="300" y="345" width="90" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="fqdn_val_a" value="fqdn" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="310" y="395" width="70" height="26" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_fv" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="345" y="395" as="sourcePoint"/>
+        <mxPoint x="345" y="383" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="rel_has_fqdn" value="has" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="280" y="280" width="60" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_fq" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="260" y="250" as="sourcePoint"/>
+        <mxPoint x="295" y="280" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_fq_1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="268" y="265" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_fq_e" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="325" y="315" as="sourcePoint"/>
+        <mxPoint x="340" y="345" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_fq_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="332" y="325" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== HOST IP ADDRESS (1NF resolution) ==================== -->
+    <mxCell id="ip_ent" value="IP Address" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="300" y="470" width="100" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="ip_addr_a" value="address" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="280" y="525" width="75" height="26" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ipa" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="318" y="525" as="sourcePoint"/>
+        <mxPoint x="340" y="508" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="ip_ver_a" value="version" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="370" y="525" width="70" height="26" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ipv" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="395" y="525" as="sourcePoint"/>
+        <mxPoint x="370" y="508" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="rel_has_ip" value="has" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="315" y="430" width="55" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_ip" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="250" y="250" as="sourcePoint"/>
+        <mxPoint x="330" y="430" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_ip_1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="280" y="390" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ip_e" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="345" y="460" as="sourcePoint"/>
+        <mxPoint x="348" y="470" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_ip_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="350" y="458" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="note_1nf_ip" value="1NF: ipv4/ipv6_addresses&#xa;arrays resolved; version&#xa;discriminates IPv4 vs IPv6" style="text;fontSize=7;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="395" y="555" width="140" height="26" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== HOST LOG CONFIG (weak entity) ==================== -->
+    <mxCell id="hlc_outer" value="" style="shape=rectangle;whiteSpace=wrap;fillColor=none;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="105" y="600" width="150" height="44" as="geometry"/>
+    </mxCell>
+    <mxCell id="hlc" value="Host Log Config" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="112" y="606" width="136" height="32" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="rel_outer_hlc" value="" style="shape=rhombus;whiteSpace=wrap;fillColor=none;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="147" y="545" width="70" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="rel_has_hlc" value="has" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="154" y="550" width="56" height="25" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_hlc" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="200" y="250" as="sourcePoint"/>
+        <mxPoint x="185" y="545" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_hlc_1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="188" y="530" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_hlc_e" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=3;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="182" y="580" as="sourcePoint"/>
+        <mxPoint x="180" y="600" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_hlc_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="185" y="585" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="log_path_a" value="log_path" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="10" y="610" width="80" height="26" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_lp" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="90" y="623" as="sourcePoint"/>
+        <mxPoint x="112" y="622" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="log_type_a" value="log_type" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="270" y="600" width="75" height="26" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_lt" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="270" y="613" as="sourcePoint"/>
+        <mxPoint x="248" y="618" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="codec_a" value="codec" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="270" y="632" width="65" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_co" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="270" y="644" as="sourcePoint"/>
+        <mxPoint x="248" y="630" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== LOG LINE SUPERCLASS (center) ============== -->
+    <!-- ================================================================ -->
+
+    <mxCell id="log_line" value="Log Line" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="600" y="180" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="ll_line_number" value="line_number" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="545" y="105" width="90" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_lln" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="590" y="135" as="sourcePoint"/>
+        <mxPoint x="640" y="180" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="ll_source_log" value="source_log" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="650" y="105" width="85" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_llsl" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="693" y="135" as="sourcePoint"/>
+        <mxPoint x="680" y="180" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="ll_raw_line" value="raw_line" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="755" y="115" width="70" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_llrl" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="775" y="143" as="sourcePoint"/>
+        <mxPoint x="740" y="185" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="ll_note" value="Superclass: 8 log types, 5 hosts&#xa;Key: (source_host, source_log, line_number)" style="text;fontSize=7;fontColor=#888888;align=center;" vertex="1" parent="1">
+      <mxGeometry x="585" y="150" width="210" height="22" as="geometry"/>
+    </mxCell>
+
+    <!-- Recorded On: Host 1 to N Log Line -->
+    <mxCell id="rel_recorded" value="Recorded On" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="400" y="183" width="110" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_h_rec" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="290" y="225" as="sourcePoint"/>
+        <mxPoint x="400" y="206" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_r1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="370" y="198" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_rec_ll" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=2;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="510" y="206" as="sourcePoint"/>
+        <mxPoint x="600" y="206" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_rn" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="565" y="192" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ======= SPECIALIZATION #1: Log Line -> Audit Event ============ -->
+    <!-- ======= Circle-based notation (lecture slide style) =========== -->
+    <!-- ================================================================ -->
+
+    <!-- Disjoint constraint circle with "d" (replaces ISA triangle) -->
+    <mxCell id="spec1_d" value="d" style="shape=ellipse;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#b85450;fontSize=12;fontStyle=1;fontColor=#b85450;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="668" y="270" width="24" height="24" as="geometry"/>
+    </mxCell>
+
+    <!-- Single line from Log Line to d-circle = partial specialization -->
+    <mxCell id="e_ll_spec1" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="680" y="230" as="sourcePoint"/>
+        <mxPoint x="680" y="270" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- d-circle to Audit Event -->
+    <mxCell id="e_spec1_ae" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="680" y="294" as="sourcePoint"/>
+        <mxPoint x="680" y="340" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="spec1_note" value="partial (single line)&#xa;disjoint (d)" style="text;fontSize=7;fontColor=#b85450;align=left;" vertex="1" parent="1">
+      <mxGeometry x="698" y="270" width="90" height="18" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== AUDIT EVENT (shared attributes) =========== -->
+    <!-- ================================================================ -->
+
+    <mxCell id="audit_event" value="Audit Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="600" y="340" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- Shared Audit Event attributes: left column -->
+    <mxCell id="a_type" value="type" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="478" y="325" width="55" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_type" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="533" y="337" as="sourcePoint"/>
+        <mxPoint x="600" y="355" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_epoch" value="epoch" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="478" y="355" width="55" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_epoch" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="533" y="367" as="sourcePoint"/>
+        <mxPoint x="600" y="362" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_serial" value="serial" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="478" y="385" width="55" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_serial" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="533" y="397" as="sourcePoint"/>
+        <mxPoint x="600" y="370" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_ts" value="timestamp" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="474" y="415" width="72" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_ts" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="546" y="427" as="sourcePoint"/>
+        <mxPoint x="600" y="378" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Shared Audit Event attributes: right side -->
+    <mxCell id="a_pid" value="pid" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="775" y="320" width="42" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_pid" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="775" y="336" as="sourcePoint"/>
+        <mxPoint x="760" y="355" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_uid" value="uid" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="825" y="320" width="42" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_uid" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="825" y="336" as="sourcePoint"/>
+        <mxPoint x="760" y="360" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_auid" value="auid" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="775" y="350" width="48" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_auid" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="775" y="366" as="sourcePoint"/>
+        <mxPoint x="760" y="370" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="a_ses" value="ses" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="830" y="350" width="42" height="24" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_ses" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="830" y="366" as="sourcePoint"/>
+        <mxPoint x="760" y="375" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ====== AUDIT MESSAGE (0..1 from Audit Event superclass) ======== -->
+    <!-- ================================================================ -->
+
+    <mxCell id="rel_has_msg" value="has" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="540" y="405" width="50" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_ae_msg" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="620" y="390" as="sourcePoint"/>
+        <mxPoint x="590" y="410" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_msg_1" value="1" style="text;fontSize=9;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="598" y="395" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_msg_e" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="558" y="433" as="sourcePoint"/>
+        <mxPoint x="540" y="470" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_msg_01" value="0..1" style="text;fontSize=8;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="545" y="448" width="28" height="14" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="msg_field" value="Audit Message" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="440" y="470" width="140" height="34" as="geometry"/>
+    </mxCell>
+
+    <!-- Audit Message attributes: row 1 -->
+    <mxCell id="m_op" value="op" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="385" y="516" width="36" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_op" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="403" y="516" as="sourcePoint"/>
+        <mxPoint x="470" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_acct" value="acct" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="428" y="516" width="42" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_acct" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="449" y="516" as="sourcePoint"/>
+        <mxPoint x="485" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_exe" value="exe" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="477" y="516" width="36" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_exe" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="495" y="516" as="sourcePoint"/>
+        <mxPoint x="505" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_hostname" value="hostname" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=7;" vertex="1" parent="1">
+      <mxGeometry x="520" y="516" width="62" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_hn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="545" y="516" as="sourcePoint"/>
+        <mxPoint x="530" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Audit Message attributes: row 2 -->
+    <mxCell id="m_addr" value="addr" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="385" y="542" width="40" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_addr" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="405" y="542" as="sourcePoint"/>
+        <mxPoint x="475" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_terminal" value="terminal" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=7;" vertex="1" parent="1">
+      <mxGeometry x="432" y="542" width="55" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_term" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="460" y="542" as="sourcePoint"/>
+        <mxPoint x="495" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_res" value="res" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="494" y="542" width="34" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_res" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="511" y="542" as="sourcePoint"/>
+        <mxPoint x="515" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_unit" value="unit" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="535" y="542" width="40" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_unit" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="550" y="542" as="sourcePoint"/>
+        <mxPoint x="535" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Audit Message attributes: row 3 (comm, id, cwd, cmd) -->
+    <mxCell id="m_comm" value="comm" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="385" y="568" width="46" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_comm" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="408" y="568" as="sourcePoint"/>
+        <mxPoint x="480" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_id" value="id" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="438" y="568" width="28" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_id" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="452" y="568" as="sourcePoint"/>
+        <mxPoint x="500" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_cwd" value="cwd" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="473" y="568" width="36" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_cwd" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="491" y="568" as="sourcePoint"/>
+        <mxPoint x="515" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="m_cmd" value="cmd" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="516" y="568" width="36" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="em_cmd" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="534" y="568" as="sourcePoint"/>
+        <mxPoint x="530" y="504" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="note_1nf_msg" value="1NF: msg TEXT blob unpacked&#xa;into 12 atomic attributes.&#xa;Associated at Audit Event level&#xa;with 0..1 cardinality (optional)." style="text;fontSize=7;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="420" y="594" width="175" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ======= SPECIALIZATION #2: Audit Event -> 8 Subtypes ========== -->
+    <!-- ======= Circle-based notation (lecture slide style) =========== -->
+    <!-- ================================================================ -->
+
+    <!-- d-circle for audit subtype specialization -->
+    <mxCell id="spec2_d" value="d" style="shape=ellipse;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#b85450;fontSize=12;fontStyle=1;fontColor=#b85450;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="668" y="430" width="24" height="24" as="geometry"/>
+    </mxCell>
+
+    <!-- Single line from Audit Event down to d-circle = partial specialization -->
+    <mxCell id="e_ae_spec2" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="680" y="390" as="sourcePoint"/>
+        <mxPoint x="680" y="430" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="spec2_note" value="partial (single line)&#xa;disjoint (d)" style="text;fontSize=7;fontColor=#b85450;align=left;" vertex="1" parent="1">
+      <mxGeometry x="698" y="430" width="90" height="18" as="geometry"/>
+    </mxCell>
+
+    <!-- ======= SUBTYPE BRANCHES FROM d-circle ======= -->
+
+    <!-- Branch lines from d-circle to each of 8 subtypes -->
+    <!-- Left group: PAM, Service, User Login, User Command -->
+    <mxCell id="e_spec2_pam" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="672" y="454" as="sourcePoint"/>
+        <mxPoint x="640" y="500" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_service" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="675" y="454" as="sourcePoint"/>
+        <mxPoint x="768" y="500" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_user_login" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="678" y="454" as="sourcePoint"/>
+        <mxPoint x="898" y="500" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_user_cmd" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="680" y="454" as="sourcePoint"/>
+        <mxPoint x="1028" y="500" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Right group: Login, Syscall, AVC, Proctitle -->
+    <mxCell id="e_spec2_login" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="682" y="454" as="sourcePoint"/>
+        <mxPoint x="640" y="600" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_syscall" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="684" y="454" as="sourcePoint"/>
+        <mxPoint x="775" y="600" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_avc" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="686" y="454" as="sourcePoint"/>
+        <mxPoint x="920" y="600" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e_spec2_proctitle" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="688" y="454" as="sourcePoint"/>
+        <mxPoint x="1060" y="600" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ======= ROW 1 SUBTYPES (msg-bearing, outer-field-lite) ======== -->
+    <!-- ================================================================ -->
+
+    <!-- PAM EVENT -->
+    <mxCell id="pam_event" value="Pam Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="590" y="500" width="100" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="pam_note" value="CRED_ACQ, USER_ACCT,&#xa;USER_START, USER_END,&#xa;CRED_DISP, CRED_REFR,&#xa;USER_AUTH (64% of rows)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="590" y="534" width="105" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- SERVICE EVENT -->
+    <mxCell id="service_event" value="Service Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="718" y="500" width="100" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="svc_note" value="SERVICE_START,&#xa;SERVICE_STOP (20%)&#xa;(fields via Audit Message)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="718" y="534" width="105" height="22" as="geometry"/>
+    </mxCell>
+
+    <!-- USER LOGIN EVENT -->
+    <mxCell id="user_login_event" value="User Login Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=9;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="845" y="500" width="106" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="ul_note" value="USER_LOGIN (SSH)&#xa;(fields via Audit Message)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="845" y="534" width="105" height="18" as="geometry"/>
+    </mxCell>
+
+    <!-- USER COMMAND EVENT -->
+    <mxCell id="user_cmd_event" value="User Command Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=9;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="975" y="500" width="118" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="ucmd_note" value="USER_CMD (sudo)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="980" y="534" width="85" height="12" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ======= ROW 2 SUBTYPES (outer-field-dominant, no msg) ========= -->
+    <!-- ================================================================ -->
+
+    <!-- LOGIN EVENT -->
+    <mxCell id="login_event" value="Login Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="590" y="600" width="100" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="a_old_auid" value="old_auid" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="590" y="644" width="55" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_oa" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="618" y="644" as="sourcePoint"/>
+        <mxPoint x="630" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_old_ses" value="old_ses" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="652" y="644" width="48" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_os" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="676" y="644" as="sourcePoint"/>
+        <mxPoint x="660" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_tty_login" value="tty" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="590" y="668" width="34" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_tty_l" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="607" y="668" as="sourcePoint"/>
+        <mxPoint x="625" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_res_login" value="res" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="632" y="668" width="34" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_resl" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="649" y="668" as="sourcePoint"/>
+        <mxPoint x="650" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="login_note" value="LOGIN (kernel login,&#xa;no msg field)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="590" y="690" width="90" height="16" as="geometry"/>
+    </mxCell>
+
+    <!-- SYSCALL EVENT -->
+    <mxCell id="syscall_event" value="Syscall Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="720" y="600" width="110" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="a_syscall" value="syscall" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="718" y="644" width="50" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_sc" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="743" y="644" as="sourcePoint"/>
+        <mxPoint x="760" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_arch" value="arch" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="775" y="644" width="40" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_arch" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="795" y="644" as="sourcePoint"/>
+        <mxPoint x="790" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_success" value="success" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="718" y="668" width="52" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_succ" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="744" y="668" as="sourcePoint"/>
+        <mxPoint x="765" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_comm_sc" value="comm" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="778" y="668" width="44" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_comm_sc" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="800" y="668" as="sourcePoint"/>
+        <mxPoint x="795" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_exe_sc" value="exe" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="828" y="644" width="38" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_exe_sc" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="842" y="644" as="sourcePoint"/>
+        <mxPoint x="820" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="syscall_note" value="SYSCALL (kernel,&#xa;no msg field)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="720" y="690" width="80" height="16" as="geometry"/>
+    </mxCell>
+
+    <!-- AVC EVENT -->
+    <mxCell id="avc_event" value="Avc Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="870" y="600" width="100" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="a_apparmor" value="apparmor" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="860" y="644" width="58" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_aa" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="889" y="644" as="sourcePoint"/>
+        <mxPoint x="905" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_operation" value="operation" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="925" y="644" width="62" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_op" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="950" y="644" as="sourcePoint"/>
+        <mxPoint x="935" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_profile" value="profile" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="860" y="668" width="48" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_prof" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="884" y="668" as="sourcePoint"/>
+        <mxPoint x="910" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_name" value="name" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="915" y="668" width="42" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_name" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="936" y="668" as="sourcePoint"/>
+        <mxPoint x="935" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a_info" value="info" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="964" y="668" width="36" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_info" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="978" y="668" as="sourcePoint"/>
+        <mxPoint x="960" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="avc_note" value="AVC (AppArmor,&#xa;no msg field)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="870" y="690" width="80" height="16" as="geometry"/>
+    </mxCell>
+
+    <!-- PROCTITLE EVENT -->
+    <mxCell id="proctitle_event" value="Proctitle Event" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1010" y="600" width="100" height="32" as="geometry"/>
+    </mxCell>
+    <mxCell id="a_proctitle" value="proctitle" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;" vertex="1" parent="1">
+      <mxGeometry x="1015" y="644" width="55" height="18" as="geometry"/>
+    </mxCell>
+    <mxCell id="ea_pt" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="1043" y="644" as="sourcePoint"/>
+        <mxPoint x="1055" y="632" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="proctitle_note" value="PROCTITLE (hex-encoded&#xa;cmdline, no msg field)" style="text;fontSize=6;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="1010" y="668" width="110" height="16" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ======= AUDIT DESIGN LOGIC NOTE =============================== -->
+    <!-- ================================================================ -->
+
+    <mxCell id="note_audit_design" value="Audit subtype design logic:&#xa;- Msg-bearing subtypes (PAM, SERVICE, USER_LOGIN,&#xa;  USER_CMD) carry no direct msg-side attributes;&#xa;  they use the shared Audit Message entity (0..1).&#xa;- Outer-field subtypes (LOGIN, SYSCALL, AVC,&#xa;  PROCTITLE) carry their own top-level attributes.&#xa;- This avoids duplicating 12 msg fields across&#xa;  4 subtypes and supports 3NF." style="text;fontSize=7;fontColor=#b85450;align=left;" vertex="1" parent="1">
+      <mxGeometry x="1010" y="700" width="210" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== LABEL DOMAIN (bottom) ===================== -->
+    <!-- ================================================================ -->
+
+    <!-- ANNOTATES RELATIONSHIP -->
+    <mxCell id="rel_annotates" value="annotates" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="620" y="760" width="95" height="42" as="geometry"/>
+    </mxCell>
+
+    <!-- Log Line to annotates: partial participation, single line -->
+    <mxCell id="e_ll_ann" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="660" y="230" as="sourcePoint"/>
+        <mxPoint x="665" y="760" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_ann_1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="668" y="735" width="16" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="part_note" value="21% of log lines labeled" style="text;fontSize=7;fontStyle=2;fontColor=#82b366;align=center;" vertex="1" parent="1">
+      <mxGeometry x="718" y="775" width="110" height="12" as="geometry"/>
+    </mxCell>
+
+    <!-- annotates to Label Annotation: total participation, bold line -->
+    <mxCell id="e_ann_la" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=3;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="665" y="802" as="sourcePoint"/>
+        <mxPoint x="665" y="840" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_ann_la1" value="1" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="670" y="815" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- LABEL ANNOTATION ENTITY -->
+    <mxCell id="label_ann" value="Label Annotation" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="570" y="840" width="170" height="42" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="la_note_key" value="Key: inherited from Log Line&#xa;(source_host, source_log, line_number)" style="text;fontSize=7;fontColor=#888888;align=center;" vertex="1" parent="1">
+      <mxGeometry x="570" y="885" width="170" height="18" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== LABEL ASSIGNMENT (associative entity) ==================== -->
+
+    <!-- Label Annotation to Label Assignment: total participation from Annotation side -->
+    <mxCell id="e_la_assign" value="" style="endArrow=none;strokeColor=#666666;strokeWidth=2;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="630" y="882" as="sourcePoint"/>
+        <mxPoint x="575" y="940" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_la_m" value="M" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="588" y="915" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- Associative entity: outer rectangle + inner diamond -->
+    <mxCell id="assign_outer" value="" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="488" y="940" width="154" height="44" as="geometry"/>
+    </mxCell>
+    <mxCell id="assign_inner" value="Label Assignment" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="498" y="945" width="134" height="34" as="geometry"/>
+    </mxCell>
+
+    <!-- Label Assignment to Attack Label -->
+    <mxCell id="e_assign_al" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="520" y="984" as="sourcePoint"/>
+        <mxPoint x="430" y="1030" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_assign_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="455" y="1010" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- ATTACK LABEL ENTITY -->
+    <mxCell id="attack_label" value="Attack Label" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="320" y="1030" width="120" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="al_name" value="label_name" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="280" y="1082" width="90" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_aln" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="325" y="1082" as="sourcePoint"/>
+        <mxPoint x="365" y="1068" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="al_phase" value="attack_phase" style="shape=ellipse;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="385" y="1082" width="95" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_alp" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="420" y="1082" as="sourcePoint"/>
+        <mxPoint x="405" y="1068" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="note_3nf_label" value="3NF: label_name -> attack_phase&#xa;(external taxonomy, 22 labels, 7 phases)" style="text;fontSize=7;fontColor=#82b366;align=left;" vertex="1" parent="1">
+      <mxGeometry x="280" y="1118" width="200" height="18" as="geometry"/>
+    </mxCell>
+
+    <!-- ==================== TRIGGERED BY: Label Assignment M:N Detection Rule ==================== -->
+
+    <mxCell id="rel_triggered_by" value="triggered by" style="shape=rhombus;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="648" y="978" width="100" height="38" as="geometry"/>
+    </mxCell>
+
+    <!-- Label Assignment to triggered by -->
+    <mxCell id="e_assign_tb" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="642" y="965" as="sourcePoint"/>
+        <mxPoint x="670" y="978" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_tb_m" value="M" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="650" y="962" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- triggered by to Detection Rule -->
+    <mxCell id="e_tb_r" value="" style="endArrow=none;strokeColor=#666666;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="748" y="1000" as="sourcePoint"/>
+        <mxPoint x="790" y="1040" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="card_tb_n" value="N" style="text;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="766" y="1020" width="16" height="14" as="geometry"/>
+    </mxCell>
+
+    <!-- DETECTION RULE ENTITY -->
+    <mxCell id="rule_ent" value="Detection Rule" style="shape=rectangle;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="790" y="1030" width="130" height="38" as="geometry"/>
+    </mxCell>
+    <mxCell id="rule_name_a" value="rule_name" style="shape=ellipse;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=4;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="815" y="1082" width="80" height="28" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_rn" value="" style="endArrow=none;strokeColor=#999999;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="855" y="1082" as="sourcePoint"/>
+        <mxPoint x="855" y="1068" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+
+    <mxCell id="note_1nf_labels" value="1NF: labels array + rules dict resolved.&#xa;Label Assignment (associative entity)&#xa;preserves per-record rule association:&#xa;one row per (annotation, label, rule)." style="text;fontSize=7;fontColor=#9673a6;align=left;" vertex="1" parent="1">
+      <mxGeometry x="640" y="1070" width="195" height="34" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== NOTES BOX ================================= -->
+    <!-- ================================================================ -->
+    <mxCell id="note_bg" value="" style="rounded=1;fillColor=#fff8e1;strokeColor=#e6d5a0;opacity=85;" vertex="1" parent="1">
+      <mxGeometry x="10" y="700" width="270" height="175" as="geometry"/>
+    </mxCell>
+    <mxCell id="note_title" value="Design Decisions" style="text;fontSize=10;fontStyle=1;align=left;fontColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="20" y="705" width="130" height="14" as="geometry"/>
+    </mxCell>
+    <mxCell id="note_body" value="1. 1NF: groups, fqdns, ipv4/ipv6_addresses,&#xa;   labels, rules, msg all resolved into entities.&#xa;2. 3NF: distribution_release -> distribution,&#xa;   distribution_version (transitive dep resolved).&#xa;3. 3NF: label_name -> attack_phase (external&#xa;   taxonomy modeled as Attack Label entity).&#xa;4. Spec #1: Log Line -> Audit Event (partial, disjoint).&#xa;   Only audit explored; other subtypes future work.&#xa;5. Spec #2: Audit Event -> 8 subtypes (partial, disjoint).&#xa;   Resolves structural heterogeneity (type -> field_set).&#xa;6. Audit Message: shared entity with 12 unpacked msg&#xa;   fields (0..1). Msg-bearing subtypes carry no direct&#xa;   msg-side attrs; outer-field subtypes use their own.&#xa;7. Label Assignment: associative entity preserves&#xa;   per-record (annotation, label, rule) grain." style="text;fontSize=7;fontColor=#888888;align=left;" vertex="1" parent="1">
+      <mxGeometry x="20" y="722" width="250" height="145" as="geometry"/>
+    </mxCell>
+
+    <!-- ================================================================ -->
+    <!-- ==================== LEGEND ==================================== -->
+    <!-- ================================================================ -->
+    <mxCell id="legend_bg" value="" style="rounded=1;fillColor=#1a1a2e;strokeColor=#444444;opacity=80;" vertex="1" parent="1">
+      <mxGeometry x="10" y="895" width="230" height="220" as="geometry"/>
+    </mxCell>
+    <mxCell id="legend_title" value="Legend (Chen / EER Notation)" style="text;fontSize=11;fontStyle=1;align=left;fontColor=#ffffff;" vertex="1" parent="1">
+      <mxGeometry x="20" y="900" width="200" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg1s" value="" style="shape=rectangle;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="20" y="923" width="16" height="11" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg1t" value="Strong Entity" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="920" width="90" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg2_outer" value="" style="shape=rectangle;fillColor=none;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="18" y="941" width="20" height="13" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg2_inner" value="" style="shape=rectangle;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="21" y="944" width="14" height="7" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg2t" value="Weak Entity" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="938" width="90" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg3_rect" value="" style="shape=rectangle;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="17" y="959" width="22" height="13" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg3_dia" value="" style="shape=rhombus;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="20" y="961" width="16" height="9" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg3t" value="Associative Entity" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="956" width="110" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg4s" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="20" y="977" width="16" height="11" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg4t" value="Key Attribute (underlined)" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="974" width="150" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg5s" value="" style="shape=ellipse;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="20" y="995" width="16" height="11" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg5t" value="Simple Attribute" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="992" width="100" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg6s" value="" style="shape=ellipse;fillColor=#fff2cc;strokeColor=#d6b656;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1013" width="16" height="11" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg6t" value="Partial Key / Derived Attribute" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="1010" width="170" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg7s" value="d" style="shape=ellipse;fillColor=#ffffff;strokeColor=#b85450;fontSize=7;fontStyle=1;fontColor=#b85450;align=center;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1031" width="16" height="12" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg7t" value="Disjoint Constraint (circle with d)" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="1028" width="180" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg8s" value="" style="endArrow=none;strokeColor=#cccccc;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="20" y="1055" as="sourcePoint"/>
+        <mxPoint x="38" y="1055" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg8t" value="Single line = Partial Specialization" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="1048" width="180" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg9s" value="" style="endArrow=none;strokeColor=#cccccc;strokeWidth=3;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="20" y="1073" as="sourcePoint"/>
+        <mxPoint x="38" y="1073" as="targetPoint"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg9t" value="Double/bold line = Total Participation" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="1066" width="190" height="16" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="leg10s" value="" style="shape=rhombus;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1088" width="16" height="12" as="geometry"/>
+    </mxCell>
+    <mxCell id="leg10t" value="Relationship" style="text;fontSize=9;align=left;fontColor=#cccccc;" vertex="1" parent="1">
+      <mxGeometry x="42" y="1086" width="100" height="16" as="geometry"/>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

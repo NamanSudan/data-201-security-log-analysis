@@ -11,9 +11,9 @@ Target table: `http_access_events` (15 columns, labeled records only).
 
 ### 1NF Check
 
-**Multi-valued fields:** The `labels` column stores a list of attack-phase tags per record (e.g. `[attacker_http, foothold, wpscan]`). This is a 1NF violation — multiple distinct values packed into a single cell. The `rules` column compounds this: it is a nested dict mapping each label to a list of matched signatures. Both fields store collections where atomic values are required.
+**Multi-valued fields:** The `labels` column stores a list of attack-phase tags per record (e.g. `[attacker_http, foothold, wpscan]`). This is a 1NF violation - multiple distinct values packed into a single cell. The `rules` column compounds this: it is a nested dict mapping each label to a list of matched signatures. Both fields store collections where atomic values are required.
 
-**Split URL fields:** `url_path` and `query_string` are correctly split from `url`, which is good 1NF practice — the full URL is not left as a single multi-part blob.
+**Split URL fields:** `url_path` and `query_string` are correctly split from `url`, which is good 1NF practice - the full URL is not left as a single multi-part blob.
 
 **1NF status: violated** in `labels` (array) and `rules` (nested dict). Stored as `TEXT[]` and `JSONB` in PostgreSQL; a fully normalized design would use junction tables. Same pattern as `labels` and `rules` in the companion intranet audit log findings (DAT-48).
 
@@ -54,38 +54,38 @@ Transitive dependencies identified:
 |---|---|
 | `http_access_event_id` | Surrogate PK, auto-incremented at insert time. |
 | `event_id` | Original line number from the raw Apache log file. Candidate key within this file. |
-| `event_timestamp` | Parsed from `[DD/Mon/YYYY:HH:MM:SS ±ZZZZ]` format with `%d/%b/%Y:%H:%M:%S %z`. Includes timezone offset — stored as `TIMESTAMP WITH TIME ZONE`. |
+| `event_timestamp` | Parsed from `[DD/Mon/YYYY:HH:MM:SS ±ZZZZ]` format with `%d/%b/%Y:%H:%M:%S %z`. Includes timezone offset - stored as `TIMESTAMP WITH TIME ZONE`. |
 | `client_ip` | IPv4 address of the requesting client. All labeled records: `172.19.131.174` (attacker). |
 | `http_method` | HTTP verb (`GET`, `POST`, `HEAD`). NULL for null requests (HTTP 408). |
 | `request_url` | Full raw URL including query string. Contains base64-encoded webshell commands in `wp_meta` parameter for webshell records. |
 | `url_path` | Path component only, split from `request_url` on `?`. NULL for null requests. Enables indexing on path without query string noise. |
 | `query_string` | Query string component, split from `request_url`. NULL when no `?` is present. |
 | `status_code` | 3-digit HTTP response code, cast to integer. |
-| `bytes_sent` | Response size in bytes. NULL (not 0) where the raw log records `-` — no response body sent. |
+| `bytes_sent` | Response size in bytes. NULL (not 0) where the raw log records `-` - no response body sent. |
 | `decoded_command` | Base64-decoded shell command from the `wp_meta` query parameter. NULL for all non-webshell records. Derived/computed column. |
 | `request_type` | `'normal'` for standard HTTP requests; `'null_request'` for HTTP 408 (client connected but sent no data). |
-| `http_access_event_category` | Array of attack-phase labels (1NF violation — stored as `TEXT[]`). |
-| `http_access_signature_matches` | Nested dict of matched detection signatures per label (1NF violation — stored as `JSONB`). |
+| `http_access_event_category` | Array of attack-phase labels (1NF violation - stored as `TEXT[]`). |
+| `http_access_signature_matches` | Nested dict of matched detection signatures per label (1NF violation - stored as `JSONB`). |
 
 ### Parsing strategy
 
 | Raw log field | Renamed column | Notes |
 |---|---|---|
-| Group 1 — first token | `client_ip` | IPv4 address; no port in access log |
-| Group 2 — `[DD/Mon/YYYY:HH:MM:SS ±ZZZZ]` | `event_timestamp` | Parsed with `%d/%b/%Y:%H:%M:%S %z` |
-| Group 3 — HTTP verb | `http_method` | `GET`, `POST`, `HEAD`, etc. NULL for null requests |
-| Group 4 — full request path + query string | `request_url` | May contain base64-encoded webshell commands in `wp_meta` |
-| Group 5 — `HTTP/1.x` | `protocol` | NULL for null requests |
-| Group 6 — 3-digit integer | `status_code` | Cast to `int` |
-| Group 7 — integer or `-` | `bytes_sent` | `-` converted to NULL |
+| Group 1 - first token | `client_ip` | IPv4 address; no port in access log |
+| Group 2 - `[DD/Mon/YYYY:HH:MM:SS ±ZZZZ]` | `event_timestamp` | Parsed with `%d/%b/%Y:%H:%M:%S %z` |
+| Group 3 - HTTP verb | `http_method` | `GET`, `POST`, `HEAD`, etc. NULL for null requests |
+| Group 4 - full request path + query string | `request_url` | May contain base64-encoded webshell commands in `wp_meta` |
+| Group 5 - `HTTP/1.x` | `protocol` | NULL for null requests |
+| Group 6 - 3-digit integer | `status_code` | Cast to `int` |
+| Group 7 - integer or `-` | `bytes_sent` | `-` converted to NULL |
 | Split from `url` on `?` | `url_path` | Path only, no query string |
 | Split from `url` on `?` | `query_string` | NULL if no `?` present |
 | `decode_wp_meta(url)` | `decoded_command` | Base64-decoded `wp_meta` parameter for webshell records |
 | Derived | `request_type` | `'normal'` or `'null_request'` |
 
 Two regex patterns handle the two log line formats:
-- **Normal:** Apache Combined Log Format — `IP - - [timestamp] "METHOD /path HTTP/version" status bytes`
-- **Null request:** `IP - - [timestamp] "-" 408 -` — client connected but sent no request data
+- **Normal:** Apache Combined Log Format - `IP - - [timestamp] "METHOD /path HTTP/version" status bytes`
+- **Null request:** `IP - - [timestamp] "-" 408 -` - client connected but sent no request data
 
 ---
 
@@ -197,6 +197,6 @@ CREATE TABLE http_access_events (
 
 6. **`request_type` discriminator:** The `'null_request'` flag isolates HTTP 408 records where the client connected but sent no data. These have NULL `method`, `url_path`, `query_string`, and `decoded_command`. Useful for detecting connection probing or slow-loris style patterns.
 
-7. **Merge with access log labels (DAT-48):** The annotation file covers the same log as the raw file. The join is on `line` number. The merged `df_merged` table is the definitive source for `http_access_events` — all 15 columns come from this join.
+7. **Merge with access log labels (DAT-48):** The annotation file covers the same log as the raw file. The join is on `line` number. The merged `df_merged` table is the definitive source for `http_access_events` - all 15 columns come from this join.
 
 8. **Cross-reference with `audit_events_intranet_raw`:** The `escalate`-labeled access log records align by timestamp with the `su` and `sudo` audit events in `audit_events_intranet_raw` (lines 1860–1868). The attacker IP `172.19.131.174` also appears in 3 `USER_LOGIN` audit events. These two tables should be joined on timestamp and IP for full kill-chain reconstruction.

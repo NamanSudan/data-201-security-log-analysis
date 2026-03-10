@@ -122,7 +122,7 @@ A single DNS resolution often produces multiple log lines: one query, one forwar
 54,035 labeled lines correspond to **DNS exfiltration (DNSteal)**. Labels and rules:
 
 - **Labels:** `dnsteal`, `attacker`, `dnsteal-received` (all three co-occur on every labeled line).
-- **Rules:** `dnsteal.domain.match`, `dnsteal.domain.received` — detection is based on domain matching the exfiltration pattern (e.g. subdomains of `kennedy-mendoza.info` used to encode stolen data).
+- **Rules:** `dnsteal.domain.match`, `dnsteal.domain.received` - detection is based on domain matching the exfiltration pattern (e.g. subdomains of `kennedy-mendoza.info` used to encode stolen data).
 
 **Label distribution (54,035 labeled records):**
 - `dnsteal`: 54,035
