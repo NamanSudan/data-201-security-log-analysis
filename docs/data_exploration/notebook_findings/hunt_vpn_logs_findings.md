@@ -79,7 +79,7 @@ Following the same pattern as auth and audit notebooks: keep `df` with parsed co
 | `username` | ~many | Parsable from `client` when format is `user/IP:port`; NULL when client is `IP:port` only (pre-auth) |
 | `client_ip` | 5537/5537 | Parsable from `client` (part after `/` or whole string if no slash) |
 | `client_port` | 5537/5537 | Parsable from `client` (after final `:`) |
-| `message_prefix` | 5537/5537 | First token or prefix of message (e.g. VERIFY OK, peer info, TLS) — drives event type |
+| `message_prefix` | 5537/5537 | First token or prefix of message (e.g. VERIFY OK, peer info, TLS) - drives event type |
 
 Message content often contains key=value or key: value pairs; these can be parsed for analytics but are not stored as separate columns in the raw table.
 
@@ -126,7 +126,7 @@ Most lines are TLS handshake and session-maintenance traffic. A single VPN conne
   - Data Channel and Control Channel setup
 
 - **Labels:** Every labeled record has `["attacker_vpn", "foothold"]`.
-- **Rule:** `attacker.foothold.vpn.ip` — detection is based on attacker IP 192.168.230.122.
+- **Rule:** `attacker.foothold.vpn.ip` - detection is based on attacker IP 192.168.230.122.
 
 **Label distribution (28 labeled records):**
 - `attacker_vpn`: 28
