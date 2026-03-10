@@ -2,7 +2,7 @@
 
 Source: `russellmitchell/labels/` (8 JSONL files across 5 hosts, 61,862 records total).
 Analysis notebook: `notebooks/09_explore_labels.ipynb`.
-Suggested staging table: `attack_labels_raw` (61,862 rows).
+Suggested staging table: `stg_attack_label_line_raw` (61,862 rows).
 
 ---
 
@@ -146,7 +146,7 @@ Suggested schema for loading the raw JSONL data into a staging table. 6 columns.
 
 ```sql
 -- PostgreSQL
-CREATE TABLE attack_labels_raw (
+CREATE TABLE stg_attack_label_line_raw (
     row_id          SERIAL PRIMARY KEY,
     source_host     VARCHAR(20) NOT NULL,
     source_log      VARCHAR(20) NOT NULL,
@@ -158,7 +158,7 @@ CREATE TABLE attack_labels_raw (
 
 ```sql
 -- MySQL
-CREATE TABLE attack_labels_raw (
+CREATE TABLE stg_attack_label_line_raw (
     row_id          INT AUTO_INCREMENT PRIMARY KEY,
     source_host     VARCHAR(20) NOT NULL,
     source_log      VARCHAR(20) NOT NULL,
@@ -180,10 +180,10 @@ CREATE TABLE attack_labels_raw (
 
 4. **External FD (label_name -> attack_phase):** Each of the 22 labels maps deterministically to one of 7 attack phases (from project taxonomy, verified). When labels are decomposed, this FD should inform whether a lookup table is needed to avoid transitive dependency in the 3NF schema.
 
-5. **Relational bridge:** The label data connects to every raw log file via `(source_host, source_log, line_number)`. This enables attack timeline reconstruction and attack-related event filtering across all 8 log types.
+5. **Relational bridge:** The label data connects to every raw log file via `(source_host, source_log, line_number)`. The staging candidate key is `(source_host, source_log, line_number)` for this dataset. This enables label timeline reconstruction and labeled event filtering across all 8 log types.
 
 6. **Data skew:** 87.4% of label records come from one file (dnsmasq.log). The exfiltration phase dominates. This skew should be considered in indexing strategy.
 
-7. **Coverage variation:** Attack-labeled lines range from 0.3% (internal_share/audit.log) to 100% (intranet_server/error.log.2) of raw log lines. Overall: 21.0% of raw log lines are attack-related.
+7. **Coverage variation:** Attack-labeled lines range from 0.3% (internal_share/audit.log) to 100% (intranet_server/error.log.2) of raw log lines. Overall: 21.0% of raw log lines are labeled.
 
 8. **Derived columns in df_raw:** `source_host` and `source_log` are derived from file paths, not from the JSONL data. They are needed because 8 files with identical schema are combined into one DataFrame/table.

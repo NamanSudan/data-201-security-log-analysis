@@ -2,13 +2,13 @@
 
 Source: `processing/config/servers.yaml` (22 hosts, YAML dictionary).
 Analysis notebook: `notebooks/01_explore_hosts.ipynb`.
-Target tables: `hosts_raw` (15 columns, 22 rows), `host_log_configs_raw` (7 columns, 66 rows).
+Staging tables: `stg_host_raw` (15 columns, 22 rows), `stg_host_log_config_raw` (7 columns, 66 rows).
 
 ---
 
 ## 1. 1NF Violations
 
-Five fields in `hosts_raw` violate first normal form by storing multiple values in a single column.
+Five fields in `stg_host_raw` violate first normal form by storing multiple values in a single column.
 
 | Field | Violation | Values per host | Resolution direction |
 |---|---|---|---|
@@ -16,11 +16,11 @@ Five fields in `hosts_raw` violate first normal form by storing multiple values 
 | `fqdns` | Multi-valued list (0-4 values) | 0-4 | Separate table: `host_fqdns(host_id, fqdn)` |
 | `ipv4_addresses` | Multi-valued list (only inet-firewall has >1) | 1-3 | Separate table or keep default only (21/22 hosts have 1) |
 | `ipv6_addresses` | Multi-valued list (only inet-firewall has >1) | 1-3 | Separate table or keep default only (21/22 hosts have 1) |
-| `logs` | Multi-valued AND composite (list of dicts) | 1-9 | Already separated as `host_log_configs_raw` |
+| `logs` | Multi-valued AND composite (list of dicts) | 1-9 | Already separated as `stg_host_log_config_raw` |
 
 2NF violations cannot exist in these raw tables because both use single-column surrogate primary keys (`host_id`, `config_id`). Partial dependencies only arise with composite keys. 2NF becomes relevant when multi-valued fields are decomposed into junction tables during normalization.
 
-3NF analysis is deferred to `docs/schema_normalization.md`. The transitive dependency `distribution_release -> distribution, distribution_version` (see FD5 below) is the primary candidate.
+3NF analysis is deferred to `docs/schema_normalization.md`. The observed correlation `distribution_release -> distribution, distribution_version` (see FD5 below) is the primary candidate to validate in final design.
 
 ---
 
@@ -32,9 +32,9 @@ These FDs are identified from the data and the business rules of the testbed. Th
 |---|---|---|---|
 | FD1 | `host_key` | all other attributes | Each YAML key uniquely identifies one host. Candidate key. |
 | FD2 | `hostname` | all other attributes | Each hostname is unique across the testbed. Candidate key. |
-| FD3 | `default_ipv4_address` | `hostname` | Each host has a unique default IPv4 (holds for these 22 rows, needs validation against other tables). |
-| FD4 | `openvpn_user` | `username` | When both are present, they always match. All 3 remote employees show openvpn_user = username. |
-| FD5 | `distribution_release` | `distribution`, `distribution_version` | `bionic` always means Ubuntu 18.04; `stretch` always means Debian 9.11. Transitive dependency: host_key -> distribution_release -> (distribution, distribution_version). Relevant for 3NF. |
+| FD3 | `default_ipv4_address` | `hostname` | Observed in this dataset (each host has a unique default IPv4; needs validation across datasets, not yet confirmed as a true FD). |
+| FD4 | `openvpn_user` | `username` | Observed in this dataset (always the same value when both present, but only 3 hosts). |
+| FD5 | `distribution_release` | `distribution`, `distribution_version` | `bionic` always means Ubuntu 18.04; `stretch` always means Debian 9.11. Observed in this dataset and a candidate transitive dependency to validate in final design. |
 
 ---
 
@@ -42,11 +42,11 @@ These FDs are identified from the data and the business rules of the testbed. Th
 
 Column mapping tables with both PostgreSQL and MySQL types are in the notebook (section 6). The DDL below is for 1:1 raw data loading before any normalization.
 
-### hosts_raw
+### stg_host_raw
 
 ```sql
 -- PostgreSQL
-CREATE TABLE hosts_raw (
+CREATE TABLE stg_host_raw (
     host_id SERIAL PRIMARY KEY,
     host_key VARCHAR(50) NOT NULL UNIQUE,
     hostname VARCHAR(100) NOT NULL UNIQUE,
@@ -67,7 +67,7 @@ CREATE TABLE hosts_raw (
 
 ```sql
 -- MySQL
-CREATE TABLE hosts_raw (
+CREATE TABLE stg_host_raw (
     host_id INT AUTO_INCREMENT PRIMARY KEY,
     host_key VARCHAR(50) NOT NULL UNIQUE,
     hostname VARCHAR(100) NOT NULL UNIQUE,
@@ -86,15 +86,15 @@ CREATE TABLE hosts_raw (
 );
 ```
 
-### host_log_configs_raw
+### stg_host_log_config_raw
 
 The `logs` nested composite field (array of dicts, 5 keys, 11 log types) maps to this separate table. `add_field` is serialized as a JSON string.
 
 ```sql
 -- PostgreSQL
-CREATE TABLE host_log_configs_raw (
+CREATE TABLE stg_host_log_config_raw (
     config_id SERIAL PRIMARY KEY,
-    host_id INT NOT NULL REFERENCES hosts_raw(host_id),
+    host_id INT NOT NULL REFERENCES stg_host_raw(host_id),
     log_path TEXT NOT NULL,
     log_type VARCHAR(50) NOT NULL,
     codec VARCHAR(20),
@@ -105,7 +105,7 @@ CREATE TABLE host_log_configs_raw (
 
 ```sql
 -- MySQL
-CREATE TABLE host_log_configs_raw (
+CREATE TABLE stg_host_log_config_raw (
     config_id INT AUTO_INCREMENT PRIMARY KEY,
     host_id INT NOT NULL,
     log_path TEXT NOT NULL,
@@ -113,7 +113,7 @@ CREATE TABLE host_log_configs_raw (
     codec VARCHAR(20),
     file_chunk_size INT,
     add_field_json TEXT,
-    FOREIGN KEY (host_id) REFERENCES hosts_raw(host_id)
+    FOREIGN KEY (host_id) REFERENCES stg_host_raw(host_id)
 );
 ```
 
@@ -127,7 +127,7 @@ To be addressed in `docs/schema_normalization.md`:
 
 2. **Transitive dependency (FD5)**: `distribution_release` determines `distribution` and `distribution_version`. For 3NF, consider a `distributions` lookup table. With only 2 distinct combinations across 22 hosts, weigh whether the decomposition is worth the complexity.
 
-3. **add_field_json**: The `host_log_configs_raw` table stores `add_field` as a JSON string with 4 distinct metadata keys (documented in notebook section 2.5). Decide whether this needs its own table (e.g., `host_log_config_metadata(config_id, metadata_key, metadata_value)`) or if the JSON string is acceptable.
+3. **add_field_json**: The `stg_host_log_config_raw` table stores `add_field` as a JSON string with 4 distinct metadata keys (documented in notebook section 2.5). Decide whether this needs its own table (e.g., `host_log_config_metadata(config_id, metadata_key, metadata_value)`) or if the JSON string is acceptable.
 
 4. **Derived columns**: `host_type` (attacker, server, employee, external) and `network_zone` (internal, DMZ, external) are derivable from `groups` but are not raw data. They belong in normalization as computed columns, a lookup table, or a view.
 

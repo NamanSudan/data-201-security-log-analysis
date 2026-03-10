@@ -3,7 +3,7 @@
 Source: `russellmitchell/gather/intranet_server/logs/audit/audit.log` (2,316 lines, Linux auditd format).
 Labels: `russellmitchell/labels/intranet_server/logs/audit/audit.log` (9 labeled lines).
 Analysis notebook: `notebooks/05_explore_audit_intranet.ipynb`.
-Target table: `audit_events_intranet_raw` (40 columns, 2,316 rows).
+Parsed staging table: `stg_audit_line_raw` (43 columns, 2,316 rows).
 
 ---
 
@@ -11,7 +11,7 @@ Target table: `audit_events_intranet_raw` (40 columns, 2,316 rows).
 
 ### 1NF Check
 
-**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation-multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `groups TEXT` and `add_field_json TEXT` in `hosts_raw`.
+**Multi-valued field:** The `msg` column contains multiple key-value pairs packed into a single text field (e.g., `op=PAM:accounting acct="root" exe="/usr/sbin/cron" hostname=? addr=? terminal=cron res=success`). This is a 1NF violation-multiple distinct values (operation, account, executable, hostname, address, terminal, result) stored in one cell. Same pattern as `groups TEXT` and `add_field_json TEXT` in `stg_host_raw`.
 
 The `msg` field is non-null for ~86% of rows (PAM events, SERVICE events, USER_LOGIN, USER_CMD). It is NULL for LOGIN, AVC, SYSCALL, and PROCTITLE event types, which carry their fields as top-level key-value pairs.
 
@@ -27,17 +27,17 @@ The raw table uses a single-column surrogate primary key (`row_id`). Partial dep
 
 ### 3NF Check
 
-Transitive dependency: `type` determines which subset of the 40 columns are populated. For example, LOGIN events populate `old_auid`, `old_ses`, `tty`, `res` but never `msg_unit`, `msg_comm`, `apparmor`, etc. This is `row_id -> type -> field_set`, a transitive dependency.
+Event type strongly correlates with which fields are populated. For example, LOGIN events populate `old_auid`, `old_ses`, `tty`, `res` but never `msg_unit`, `msg_comm`, `apparmor`, etc. This is `row_id -> type -> field_set`, a transitive chain where a non-key attribute determines other non-key attributes.
 
-**3NF status: violated.** Resolution direction: subtype tables keyed by event type during normalization.
+**3NF status: structural heterogeneity noted.** The type -> field_set correlation may motivate subtype modeling in the final design.
 
 ### Preliminary Functional Dependencies
 
 | FD | Determinant | Dependent(s) | Reasoning |
 |---|---|---|---|
 | FD1 | `row_id` | all other attributes | Surrogate PK. |
-| FD2 | `line_number` | all other attributes | Each log line is unique. Candidate key. |
-| FD3 | `type` | populated field set | Each event type uses a specific subset of columns (3NF violation). |
+| FD2 | `(source_host, source_log, line_number)` | all other attributes | Each line in a given source file is unique. Staging candidate key across files. |
+| FD3 | `type` | populated field set | Each event type uses a specific subset of columns (structural heterogeneity, normalization input). |
 | FD4 | `serial` | `epoch`, `timestamp` | All rows with the same serial share the same timestamp (multi-line events). |
 | FD5 | `old_auid` | constant `4294967295` | All 304 LOGIN events have old_auid = 4294967295. Trivial (only one value). |
 
@@ -101,11 +101,11 @@ When unpacked during normalization, the msg blob contains these sub-fields: op (
 | USER_CMD | 1 | 0.04% | Command |
 | CRED_REFR | 1 | 0.04% | PAM |
 
-Dominant pattern: ~64% cron PAM cycles (root, /usr/sbin/cron), ~20% systemd service start/stop. Attack events are 9 lines (0.4%).
+Dominant pattern: ~64% cron PAM cycles (root, /usr/sbin/cron), ~20% systemd service start/stop. Labeled lines: 9 (0.4%).
 
 ---
 
-## 4. Attack Events (Ground Truth Labels)
+## 4. Labeled Lines (Ground Truth Labels)
 
 9 labeled lines (1860-1868), all privilege escalation:
 
@@ -122,19 +122,22 @@ The attacker IP 172.19.131.174 appears in 21 rows total, including 3 USER_LOGIN 
 
 4 serials (529-532) span 3 lines each: AVC + SYSCALL + PROCTITLE. These are kernel-level AppArmor events grouped by serial number. The remaining 2,304 serials each have exactly 1 line.
 
-Normalization decision: keep as separate rows (preserving 1:1 mapping) or merge per serial. The raw table keeps them as separate rows.
+Serial grouping is an important design input; final grain will be decided in schema finalization docs. The staging table keeps them as separate rows.
 
 ---
 
-## 6. DDL for Raw Loading
+## 6. Parsed Staging DDL
 
-40 columns. The `msg` field stores the full `msg='...'` string as a single TEXT blob (1NF violation-normalization unpacks it). Type inference assumptions are documented in `type_inference_assumptions.md` (data-201/ root).
+43 columns. This file maps to the shared staging table shape `stg_audit_line_raw`; `source_host` and `source_log` distinguish records from different audit sources. The `msg` field stores the full `msg='...'` string as a single TEXT blob (1NF violation-normalization unpacks it). Type inference assumptions are documented in `type_inference_assumptions.md` (data-201/ root).
 
 ```sql
 -- PostgreSQL
-CREATE TABLE audit_events_intranet_raw (
+CREATE TABLE stg_audit_line_raw (
     row_id          SERIAL PRIMARY KEY,
+    source_host     VARCHAR(30) NOT NULL,
+    source_log      VARCHAR(50) NOT NULL,
     line_number     INTEGER NOT NULL,
+    raw_line        TEXT NOT NULL,
     type            VARCHAR(20) NOT NULL,
     epoch           DOUBLE PRECISION NOT NULL,
     serial          INTEGER NOT NULL,
@@ -179,9 +182,12 @@ CREATE TABLE audit_events_intranet_raw (
 
 ```sql
 -- MySQL
-CREATE TABLE audit_events_intranet_raw (
+CREATE TABLE stg_audit_line_raw (
     row_id          INT AUTO_INCREMENT PRIMARY KEY,
+    source_host     VARCHAR(30) NOT NULL,
+    source_log      VARCHAR(50) NOT NULL,
     line_number     INT NOT NULL,
+    raw_line        TEXT NOT NULL,
     type            VARCHAR(20) NOT NULL,
     epoch           DOUBLE NOT NULL,
     serial          INT NOT NULL,
@@ -228,9 +234,9 @@ CREATE TABLE audit_events_intranet_raw (
 
 ## 7. Notes for Normalization Phase
 
-1. **1NF violation (msg column):** The `msg` TEXT column packs multiple key-value pairs (op, acct, exe, hostname, addr, terminal, res, unit, comm, id, cwd, cmd) into a single text blob. Normalization should unpack these into separate columns. Same pattern as `groups TEXT` in hosts_raw.
+1. **1NF violation (msg column):** The `msg` TEXT column packs multiple key-value pairs (op, acct, exe, hostname, addr, terminal, res, unit, comm, id, cwd, cmd) into a single text blob. Normalization should unpack these into separate columns. Same pattern as `groups TEXT` in `stg_host_raw`.
 
-2. **3NF violation (type -> field_set):** The 15 event types each use a different subset of the 40 columns. Normalization should create subtype tables (e.g., `audit_pam_events`, `audit_login_events`, `audit_service_events`, `audit_syscall_events`) with shared columns in a parent table and type-specific columns in subtypes.
+2. **Structural heterogeneity (type -> field_set):** The 15 event types each use a different subset of columns. This may motivate subtype modeling in the final design (e.g., `audit_pam_events`, `audit_login_events`, `audit_service_events`, `audit_syscall_events`) with shared columns in a parent table and type-specific columns in subtypes.
 
 3. **Unset sentinel values:** auid=4294967295 and ses=4294967295 appear in 1,092 rows (47.2%), representing system processes without interactive login sessions. Normalization should decide: store as-is, convert to NULL, or add a flag column.
 
@@ -238,6 +244,6 @@ CREATE TABLE audit_events_intranet_raw (
 
 5. **Hex-encoded fields:** The msg blob in USER_CMD contains hex-encoded command data. `proctitle` (PROCTITLE events) contains hex-encoded command line. Normalization should decide whether to store decoded values alongside raw hex.
 
-6. **Merge with internal_share audit.log (DAT-36):** Both files use the same auditd format. The intranet_server file (2,316 rows) covers privilege escalation; the internal_share file covers exfiltration. They share the same schema and should combine in the final `auth_events` table with a `host_id` FK discriminator.
+6. **Cross-file synthesis with internal_share audit.log (DAT-36):** This file and `internal_share` share the same auditd source format and may share a common final audit schema after cross-file synthesis. The intranet_server file (2,316 rows) covers privilege escalation; the internal_share file covers exfiltration.
 
-7. **Serial-grouped events:** 4 multi-line events (AVC+SYSCALL+PROCTITLE) share a serial. Decide whether to keep as separate rows or merge per serial in the normalized schema.
+7. **Serial-grouped events:** 4 multi-line events (AVC+SYSCALL+PROCTITLE) share a serial. Serial grouping is an important design input; final grain will be decided in schema finalization docs.
