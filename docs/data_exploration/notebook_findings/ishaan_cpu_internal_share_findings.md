@@ -2,7 +2,7 @@
 
 Source: `russellmitchell/gather/internal_share/logs/2022-01-21-system_cpu.log` (1,919 records, JSON Lines / metricbeat format).
 Analysis notebook: `notebooks/04_explore_system_cpu_internal_share.ipynb`.
-Target table: `system_cpu_events` (12 columns, 1,919 rows).
+Target table: `system_cpu_events` (14 columns, 1,919 rows).
 
 ---
 
@@ -57,6 +57,8 @@ Two transitive dependencies are present:
 | `cpu_iowait_pct` | 1919/1919 | varies | Range 0.0000–0.9440. Peaks during exfiltration window. |
 | `cpu_steal_pct` | 1919/1919 | varies | Range 0.0000–0.0116. Very low throughout. |
 | `cpu_softirq_pct` | 1919/1919 | varies | Near-zero throughout. |
+| `cpu_irq_pct` | 1919/1919 | varies | Hardware interrupt CPU time. Always 0 in this dataset. |
+| `cpu_nice_pct` | 1919/1919 | varies | CPU time for niced (low-priority) processes. Always 0 in this dataset. |
 | `cores` | 1919/1919 | 1 | Always 2. Constant - no analytical value in this table. |
 | `event_duration_ns` | 1919/1919 | varies | Time metricbeat took to collect each record, in nanoseconds. |
 | `metricset_period_ms` | 1919/1919 | 1 | Always 45000 ms. Constant - could be dropped or moved to metadata table. |
@@ -101,7 +103,7 @@ Spike record count by window:
 
 ## 5. DDL for Raw Loading
 
-12 columns. All pct values stored as `NUMERIC(6,4)` - source data has 4 decimal places of precision and values range 0.0–1.0. Note: `cpu_total_pct` reaches exactly 1.0000 during the attack, so the type must accommodate values up to 1.
+14 columns. All pct values stored as `NUMERIC(6,4)` - source data has 4 decimal places of precision and values range 0.0–1.0. Note: `cpu_total_pct` reaches exactly 1.0000 during the attack, so the type must accommodate values up to 1.
 
 ```sql
 -- PostgreSQL
@@ -116,6 +118,8 @@ CREATE TABLE system_cpu_events (
     cpu_iowait_pct       NUMERIC(6,4),
     cpu_steal_pct        NUMERIC(6,4),
     cpu_softirq_pct      NUMERIC(6,4),
+    cpu_irq_pct          NUMERIC(6,4),
+    cpu_nice_pct         NUMERIC(6,4),
     cpu_cores            SMALLINT,
     created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -134,6 +138,8 @@ CREATE TABLE system_cpu_events (
     cpu_iowait_pct       DECIMAL(6,4),
     cpu_steal_pct        DECIMAL(6,4),
     cpu_softirq_pct      DECIMAL(6,4),
+    cpu_irq_pct          DECIMAL(6,4),
+    cpu_nice_pct         DECIMAL(6,4),
     cpu_cores            SMALLINT,
     created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
 );
