@@ -1,11 +1,15 @@
-"""Staging ORM models for Alembic metadata registration."""
+"""Staging table ORM models.
 
-from src.models.staging.auth_logs import RiverAuthLogStaging
-from src.models.staging.dns_events import RiverDnsEventsStaging
-from src.models.staging.vpn_events import RiverVpnEventsStaging
+Import all staging models here so Alembic autogenerate picks them up.
+"""
+
+from src.models.staging.audit import StgAuditLineRaw
+from src.models.staging.host import StgHostLogConfigRaw, StgHostRaw
+from src.models.staging.labels import StgAttackLabelLineRaw
 
 __all__ = [
-    "RiverAuthLogStaging",
-    "RiverDnsEventsStaging",
-    "RiverVpnEventsStaging",
+    "StgHostRaw",
+    "StgHostLogConfigRaw",
+    "StgAuditLineRaw",
+    "StgAttackLabelLineRaw",
 ]

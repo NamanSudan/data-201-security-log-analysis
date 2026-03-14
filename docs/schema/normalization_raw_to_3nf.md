@@ -112,7 +112,7 @@ CREATE TABLE stg_host_raw (
 | 2 | host_id | INT | NOT NULL, FK | (parent host) | References stg_host_raw(host_id) |
 | 3 | log_path | TEXT | NOT NULL | path | e.g. "/var/log/audit/audit.log" |
 | 4 | log_type | VARCHAR(50) | NOT NULL | type | 11 distinct log types |
-| 5 | codec | VARCHAR(20) | nullable | codec | |
+| 5 | codec | TEXT | nullable | codec | String or JSON-serialized dict (see note below) |
 | 6 | file_chunk_size | INT | nullable | file_chunk_size | |
 | 7 | add_field_json | TEXT | nullable | add_field | Serialized JSON string (4 distinct metadata keys) |
 
@@ -124,7 +124,7 @@ CREATE TABLE stg_host_log_config_raw (
     host_id        INT NOT NULL REFERENCES stg_host_raw(host_id),
     log_path       TEXT NOT NULL,
     log_type       VARCHAR(50) NOT NULL,
-    codec          VARCHAR(20),
+    codec          TEXT,
     file_chunk_size INT,
     add_field_json TEXT
 );
@@ -135,7 +135,8 @@ CREATE TABLE stg_host_log_config_raw (
 1. For each host in `servers.yaml`, iterate over the `logs` list.
 2. Insert one row per log config entry, setting `host_id` to the parent host's surrogate key.
 3. `add_field` dict is serialized to JSON string.
-4. Load after `stg_host_raw` (FK dependency).
+4. `codec` is usually a plain string (e.g. `"json"`), but at least one entry in servers.yaml has a nested dict value (`{"json": {"ecs_compatibility": "disabled"}}`). The staging parser serializes dict codec values to JSON text via `json.dumps()`, so the column type is `TEXT` rather than `VARCHAR(20)`.
+5. Load after `stg_host_raw` (FK dependency).
 
 **Known normalization violations (for iteration 2):**
 
