@@ -1,4 +1,4 @@
-# 3NF Data Model -- hosts + audit_events
+# 3NF Data Model-hosts + audit_events
 
 Source notebooks: `01_explore_hosts.ipynb`, `05_explore_audit_intranet.ipynb`, `07_explore_audit_internal_share.ipynb`.
 EER diagram (Chen): `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
@@ -10,8 +10,8 @@ EER diagram (Chen): `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
 | # | Notebook | Source path (under russellmitchell/) | Raw table | Rows | Cols | Domain |
 |---|---|---|---|---|---|---|
 | 1 | 01 | `processing/config/servers.yaml` | `hosts_raw` | 22 | 15 | Host inventory (all 22 testbed machines) |
-| 2 | 05 | `gather/intranet_server/logs/audit/audit.log` | `audit_events_intranet_raw` | 2,316 | 40 | Linux auditd -- privilege escalation context |
-| 3 | 07 | `gather/internal_share/logs/audit/audit.log` | `audit_events_internal_share_raw` | 732 | 40 | Linux auditd -- data exfiltration context |
+| 2 | 05 | `gather/intranet_server/logs/audit/audit.log` | `audit_events_intranet_raw` | 2,316 | 40 | Linux auditd-privilege escalation context |
+| 3 | 07 | `gather/internal_share/logs/audit/audit.log` | `audit_events_internal_share_raw` | 732 | 40 | Linux auditd-data exfiltration context |
 
 Source 2 and 3 use the same auditd format and identical 40-column schema, but come from different hosts with different attack semantics:
 - **intranet_server**: SSH login by attacker (172.19.131.174), `su` to jhall, `sudo cat /etc/shadow`. 15 event types, 9 labeled attack lines.
@@ -226,7 +226,7 @@ Note: Within this subtype, AVC/SYSCALL/PROCTITLE each populate different columns
 | has_ipv6 | host | host_ipv6 | 1:N | total : total | Every host has at least 1 |
 | has_log_config | host | host_log_config | 1:N | total : total | Every host has 1-9 log configs |
 | generates | host | audit_event | 1:N | partial : total | Only 2 of 22 hosts have audit logs in scope |
-| specializes | audit_event | subtypes | total, disjoint | -- | Every event is exactly 1 subtype |
+| specializes | audit_event | subtypes | total, disjoint |-| Every event is exactly 1 subtype |
 
 The **generates** relationship is the cross-domain bridge: it connects the host inventory (notebook 01) to the audit events (notebooks 05, 07). The FK `audit_event.host_id` references `host.host_id`. When loading, each audit source file is mapped to its host_id via `host.host_key`:
 - `gather/intranet_server/...` -> host_key = "intranet-server"
