@@ -18,8 +18,8 @@ class IshaanApacheErrorStaging(Base):
         {"schema": "staging"},
     )
 
-    line_number:     Mapped[int]            = mapped_column(Integer, primary_key=True)
-    event_timestamp: Mapped[object | None]  = mapped_column(DateTime(timezone=True), nullable=True)
-    log_level:       Mapped[str | None]     = mapped_column(String(50), nullable=True)
-    client_ip:       Mapped[str | None]     = mapped_column(INET, nullable=True)
-    message:         Mapped[str]            = mapped_column(Text, nullable=False)
+    line_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_timestamp: Mapped[object | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    log_level: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    client_ip: Mapped[str | None] = mapped_column(INET, nullable=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
