@@ -8,7 +8,7 @@ CREATE TABLE stg_host_log_config_raw (
     host_id         INT NOT NULL REFERENCES stg_host_raw(host_id),
     log_path        TEXT NOT NULL,                -- e.g. "/var/log/audit/audit.log"
     log_type        VARCHAR(50) NOT NULL,         -- 11 distinct log types
-    codec           VARCHAR(20),
+    codec           TEXT,                         -- string or serialized JSON dict
     file_chunk_size INT,
     add_field_json  TEXT                          -- serialized JSON string
 );

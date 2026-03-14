@@ -45,15 +45,21 @@ def parse_hosts(yaml_path: Path) -> tuple[list[dict], list[dict]]:
         host_rows.append(host_row)
 
         for log_entry in info.get("logs", []):
-            log_config_rows.append({
-                "host_key": host_key,
-                "log_path": log_entry["path"],
-                "log_type": log_entry["type"],
-                "codec": log_entry.get("codec"),
-                "file_chunk_size": log_entry.get("file_chunk_size"),
-                "add_field_json": (
-                    json.dumps(log_entry["add_field"]) if log_entry.get("add_field") else None
-                ),
-            })
+            log_config_rows.append(
+                {
+                    "host_key": host_key,
+                    "log_path": log_entry["path"],
+                    "log_type": log_entry["type"],
+                    "codec": (
+                        json.dumps(log_entry["codec"])
+                        if isinstance(log_entry.get("codec"), dict)
+                        else log_entry.get("codec")
+                    ),
+                    "file_chunk_size": log_entry.get("file_chunk_size"),
+                    "add_field_json": (
+                        json.dumps(log_entry["add_field"]) if log_entry.get("add_field") else None
+                    ),
+                }
+            )
 
     return host_rows, log_config_rows

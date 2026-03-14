@@ -16,8 +16,20 @@ RE_NESTED_MSG = re.compile(r"msg='([^']+)'")
 RE_OUTER_KV = re.compile(r'([\w-]+)=("[^"]*"|\([^)]*\)|\S+)')
 
 # Columns that should be parsed as integers
-INT_COLUMNS = {"pid", "uid", "syscall", "items", "ppid", "gid", "euid", "suid", "fsuid",
-               "egid", "sgid", "fsgid"}
+INT_COLUMNS = {
+    "pid",
+    "uid",
+    "syscall",
+    "items",
+    "ppid",
+    "gid",
+    "euid",
+    "suid",
+    "fsuid",
+    "egid",
+    "sgid",
+    "fsgid",
+}
 BIGINT_COLUMNS = {"auid", "ses", "old_auid", "old_ses", "exit"}
 
 # Audit sources in scope (host_key -> file path relative to gather/)

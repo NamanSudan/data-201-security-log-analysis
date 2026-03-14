@@ -43,6 +43,6 @@ class StgHostLogConfigRaw(Base):
     )
     log_path: Mapped[str] = mapped_column(Text, nullable=False)
     log_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    codec: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    codec: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_chunk_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     add_field_json: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -41,8 +41,7 @@ LABEL_FILE_CONFIG = [
     {
         "host": "monitoring",
         "log": "cpu.log",
-        "rel_path": "labels/monitoring/logs/logstash/intranet-server/"
-        "2022-01-24-system.cpu.log",
+        "rel_path": "labels/monitoring/logs/logstash/intranet-server/2022-01-24-system.cpu.log",
     },
     {
         "host": "vpn",
@@ -79,12 +78,14 @@ def parse_label_files(dataset_root: Path) -> list[dict]:
                 if not raw_line:
                     continue
                 obj = json.loads(raw_line)
-                all_rows.append({
-                    "source_host": source_host,
-                    "source_log": source_log,
-                    "line_number": obj["line"],
-                    "labels_json": json.dumps(obj["labels"]),
-                    "rules_json": json.dumps(obj["rules"]),
-                })
+                all_rows.append(
+                    {
+                        "source_host": source_host,
+                        "source_log": source_log,
+                        "line_number": obj["line"],
+                        "labels_json": json.dumps(obj["labels"]),
+                        "rules_json": json.dumps(obj["rules"]),
+                    }
+                )
 
     return all_rows
