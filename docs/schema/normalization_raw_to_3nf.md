@@ -6,9 +6,12 @@ Reference: `docs/schema/data_model_3nf.md` for the target entity catalog and UML
 
 ## Iteration Scope
 
-**This iteration (iteration 1):** Staging layer. Documents how each raw source file maps into its staging table, including exact column schemas, parsing logic, provenance handling, and loading notes. The goal is to make staging table creation and data loading executable.
+**Iteration 1 (complete):** Staging layer. Documents how each raw source file maps into its staging table, including exact column schemas, parsing logic, provenance handling, and loading notes.
 
-**Next iteration (iteration 2):** 3NF transformation. Will document how each staging table decomposes into normalized 3NF entities, including DDLs, ETL logic, and verification queries.
+**Iteration 2 (in progress):** 3NF transformation. Documents how each staging table decomposes into normalized 3NF entities, including DDLs, ETL logic, and verification queries.
+- Host domain: **complete** (see "3NF Transformation: Host Inventory" below).
+- Audit domain: pending.
+- Labels domain: pending.
 
 ---
 
@@ -571,41 +574,396 @@ In practice, loading `stg_host_raw` first and then everything else is simplest.
 
 ---
 
-## Forward-Looking Notes: 3NF Refinement (Iteration 2)
+## 3NF Transformation: Host Inventory (Iteration 2)
 
-This section outlines the planned 3NF transformations. Full DDLs, ETL logic, and verification queries will be documented in iteration 2. See `docs/schema/data_model_3nf.md` for the current 3NF entity catalog.
+Source staging tables: `stg_host_raw` (22 rows, 15 cols), `stg_host_log_config_raw` (66 rows, 7 cols).
+Target: 7 normalized tables in the host domain.
+Findings doc: `docs/data_exploration/notebook_findings/naman_hosts_findings.md`.
+EER diagram: `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
 
-### Hosts: Staging to 3NF
+**Implementation note:** 1NF and 2NF are documented below as logical normalization stages for audit and teaching purposes. They are not separate physical schemas. The DAT-59 implementation should create only the final 3NF physical tables and write ETL that transforms directly from staging to 3NF.
 
-From `stg_host_raw` and `stg_host_log_config_raw`:
+### Row Grain Recap
 
-| Staging source | 3NF target(s) | Transformation |
+| Staging table | Row grain | Rows | PK | Natural key(s) |
+|---|---|---|---|---|
+| `stg_host_raw` | One row per host machine | 22 | `host_id` (SERIAL) | `host_key` (UNIQUE), `hostname` (UNIQUE) |
+| `stg_host_log_config_raw` | One row per log config per host | 66 | `config_id` (SERIAL) | `(host_id, log_path)`-candidate business key, verified unique in current data |
+
+### Functional Dependencies
+
+Identified from data and business rules (see findings doc, section 2).
+
+| FD | Determinant | Dependent(s) | Type | Action |
+|---|---|---|---|---|
+| FD1 | `host_key` | all other attributes | Candidate key | None (key) |
+| FD2 | `hostname` | all other attributes | Candidate key | None (key) |
+| FD3 | `default_ipv4_address` | `hostname` | Observed, not confirmed | Ignore (not a reliable business rule) |
+| FD4 | `openvpn_user` | `username` | Observed in 3 hosts | Ignore (coincidental in testbed) |
+| FD5 | `distribution_release` | `distribution`, `distribution_version` | **Transitive dependency** | **Resolve at 3NF** (extract lookup table) |
+
+### Normalization Violations in Staging
+
+| Violation | Table | Field(s) | Normal form | Resolution |
+|---|---|---|---|---|
+| Multi-valued JSON array | `stg_host_raw` | `groups` (2-5 values, 17 distinct) | 1NF | Junction table `host_group` |
+| Multi-valued JSON array | `stg_host_raw` | `fqdns` (0-4 values) | 1NF | Child table `host_fqdn` |
+| Multi-valued JSON array | `stg_host_raw` | `ipv4_addresses` (1-3 values) | 1NF | Child table `host_ipv4` |
+| Multi-valued JSON array | `stg_host_raw` | `ipv6_addresses` (1-3 values) | 1NF | Child table `host_ipv6` |
+| JSON blob (key-value pairs) | `stg_host_log_config_raw` | `add_field_json` (4 distinct keys) | 1NF (minor) | **Practical exception:** retained as opaque JSON payload (see design decisions) |
+| Transitive dependency | `stg_host_raw` | `distribution_release -> distribution, distribution_version` | 3NF | Lookup table `os_release` |
+
+### Logical Stage 1: 1NF-Resolve Multi-Valued Attributes
+
+Explode 4 JSON array columns from `stg_host_raw` into separate tables. Drop those columns from the host table.
+
+**host (at 1NF)**-22 rows, multi-valued columns removed:
+
+| Column | Type | Nullable | Change from staging |
+|---|---|---|---|
+| host_id | SERIAL | PK | Unchanged |
+| host_key | VARCHAR(50) | UNIQUE, NOT NULL | Unchanged |
+| hostname | VARCHAR(100) | UNIQUE, NOT NULL | Unchanged |
+| username | VARCHAR(50) | nullable | Unchanged |
+| openvpn_user | VARCHAR(50) | nullable | Unchanged |
+| distribution | VARCHAR(50) | NOT NULL | Unchanged (moves at 3NF) |
+| distribution_release | VARCHAR(20) | NOT NULL | Unchanged (moves at 3NF) |
+| distribution_version | VARCHAR(20) | NOT NULL | Unchanged (moves at 3NF) |
+| default_ipv4_address | VARCHAR(45) | NOT NULL | Unchanged |
+| default_ipv6_address | VARCHAR(45) | NOT NULL | Unchanged |
+| timezone | VARCHAR(10) | NOT NULL | Unchanged |
+
+Dropped: `groups`, `fqdns`, `ipv4_addresses`, `ipv6_addresses`.
+
+New junction/child tables created:
+- `host_group(host_id PK, group_name PK)`-63 rows, M:N junction
+- `host_fqdn(host_id PK, fqdn PK)`-20 rows, 1:N child
+- `host_ipv4(host_id PK, ipv4_address PK)`-24 rows, 1:N child
+- `host_ipv6(host_id PK, ipv6_address PK)`-24 rows, 1:N child
+
+### Logical Stage 2: Composite Key Identification + 2NF Check
+
+After 1NF, composite keys exist only in junction/child tables:
+
+| Table | PK | PK type | Non-key attributes |
+|---|---|---|---|
+| host | `host_id` | Single-column | 10 |
+| host_group | `(host_id, group_name)` | Composite | 0 (all-key) |
+| host_fqdn | `(host_id, fqdn)` | Composite | 0 (all-key) |
+| host_ipv4 | `(host_id, ipv4_address)` | Composite | 0 (all-key) |
+| host_ipv6 | `(host_id, ipv6_address)` | Composite | 0 (all-key) |
+| host_log_config | `config_id` | Single-column | 5 |
+
+**2NF result: no partial dependencies exist.** Entity tables have single-column PKs (partial deps impossible). Junction tables are all-key (no non-key attributes to be partially dependent). No schema changes at 2NF.
+
+### Logical Stage 3: 3NF-Resolve Transitive Dependencies
+
+FD5 creates a transitive dependency in the host table:
+
+```
+host_key -> distribution_release -> distribution, distribution_version
+```
+
+`distribution_release` is a non-key attribute that determines two other non-key attributes (`bionic` always means Ubuntu 18.04; `stretch` always means Debian 9.11).
+
+**Resolution:** Extract an `os_release` lookup table. Replace the 3 distribution columns on host with an `os_release_id` FK.
+
+All other tables pass 3NF. `host_log_config` has no transitive dependencies (`log_type` does not determine `codec` or `file_chunk_size`).
+
+---
+
+### Final 3NF Tables: Host Domain
+
+7 tables total. These are the physical tables for DAT-59 implementation.
+
+#### os_release (2 rows)
+
+3NF lookup table. Resolves transitive dependency `distribution_release -> distribution, distribution_version`. Row grain: one row per OS release.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| os_release_id | SERIAL | PK | Surrogate key |
+| distribution_release | VARCHAR(20) | UNIQUE, NOT NULL | Natural key; determinant from FD5 |
+| distribution | VARCHAR(50) | NOT NULL | "Ubuntu" or "Debian" |
+| distribution_version | VARCHAR(20) | NOT NULL | "18.04" or "9.11" |
+
+```sql
+CREATE TABLE os_release (
+    os_release_id        SERIAL PRIMARY KEY,
+    distribution_release VARCHAR(20) NOT NULL UNIQUE,
+    distribution         VARCHAR(50) NOT NULL,
+    distribution_version VARCHAR(20) NOT NULL
+);
+```
+
+**ETL:** `SELECT DISTINCT distribution_release, distribution, distribution_version FROM stg_host_raw` -> insert 2 rows.
+
+#### host (22 rows)
+
+Central reference entity. Every machine in the AIT testbed. Row grain: one row per host.
+
+`host_key` is the downstream integration key: it aligns with `stg_audit_line_raw.source_host` and `stg_attack_label_line_raw.source_host`, enabling FK resolution when loading audit events and labels into 3NF via `host.host_key = source_host`.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| host_id | SERIAL | PK | Surrogate key |
+| host_key | VARCHAR(50) | UNIQUE, NOT NULL | YAML dict key (e.g. "intranet_server"); integration key for cross-domain FK resolution |
+| hostname | VARCHAR(100) | UNIQUE, NOT NULL | Machine hostname |
+| username | VARCHAR(50) | nullable | Only 7 employee hosts |
+| openvpn_user | VARCHAR(50) | nullable | Only 3 remote employees |
+| default_ipv4_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host |
+| default_ipv6_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host |
+| timezone | VARCHAR(10) | NOT NULL | "UTC" for all 22 hosts (retained as source data) |
+| os_release_id | INT | FK -> os_release, NOT NULL | 3NF lookup reference |
+
+```sql
+CREATE TABLE host (
+    host_id              SERIAL PRIMARY KEY,
+    host_key             VARCHAR(50) NOT NULL UNIQUE,
+    hostname             VARCHAR(100) NOT NULL UNIQUE,
+    username             VARCHAR(50),
+    openvpn_user         VARCHAR(50),
+    default_ipv4_address VARCHAR(45) NOT NULL,
+    default_ipv6_address VARCHAR(45) NOT NULL,
+    timezone             VARCHAR(10) NOT NULL,
+    os_release_id        INT NOT NULL REFERENCES os_release(os_release_id)
+);
+```
+
+**ETL:** Read from `stg_host_raw`. For each row, look up `distribution_release` in `os_release` to get `os_release_id`. Drop `distribution`, `distribution_release`, `distribution_version`.
+
+#### host_group (63 rows)
+
+1NF resolution of multi-valued `groups` field. M:N junction (a host belongs to 2-5 groups; a group contains 1-10 hosts). Row grain: one row per group membership per host.
+
+| Column | Type | Constraint |
 |---|---|---|
-| `stg_host_raw.groups` | `host_group(host_id, group_name)` | `json.loads()` the JSON array, one row per group |
-| `stg_host_raw.fqdns` | `host_fqdn(host_id, fqdn)` | `json.loads()` the JSON array, one row per FQDN |
-| `stg_host_raw.ipv4_addresses` | `host_ipv4(host_id, ipv4_address)` | `json.loads()` the JSON array, one row per IP |
-| `stg_host_raw.ipv6_addresses` | `host_ipv6(host_id, ipv6_address)` | `json.loads()` the JSON array, one row per IP |
-| `stg_host_raw.distribution*` | `distribution(distribution_id, ...)` + FK on `host` | Extract lookup table (2 rows) |
-| `stg_host_log_config_raw` | `host_log_config` | Direct (possibly decompose add_field_json) |
+| host_id | INT | PK, FK -> host |
+| group_name | VARCHAR(50) | PK |
 
-### Audit: Staging to 3NF
+```sql
+CREATE TABLE host_group (
+    host_id    INT NOT NULL REFERENCES host(host_id),
+    group_name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (host_id, group_name)
+);
+```
+
+**ETL:** For each row in `stg_host_raw`, `json.loads(groups)` produces a list. Insert one row per element with the host's `host_id`.
+
+17 distinct group names: attacker, beatservers, dmz, dnat, dnsservers, employee, ext_mail, ext_user, firewall, internal_employee, internet, intranet, mailserver, proxied, remote_employee, servers, share.
+
+#### host_fqdn (20 rows)
+
+1NF resolution of multi-valued `fqdns` field. 1:N child (each FQDN belongs to exactly one host). Row grain: one row per FQDN per host.
+
+| Column | Type | Constraint |
+|---|---|---|
+| host_id | INT | PK, FK -> host |
+| fqdn | VARCHAR(255) | PK |
+
+```sql
+CREATE TABLE host_fqdn (
+    host_id INT NOT NULL REFERENCES host(host_id),
+    fqdn    VARCHAR(255) NOT NULL,
+    PRIMARY KEY (host_id, fqdn)
+);
+```
+
+**ETL:** For each row in `stg_host_raw` where `fqdns IS NOT NULL`, `json.loads(fqdns)` produces a list. Insert one row per element. 7 hosts with NULL fqdns produce zero rows. Per-host: 12 hosts have 1, 2 hosts have 2, 1 host has 4.
+
+#### host_ipv4 (24 rows)
+
+1NF resolution of multi-valued `ipv4_addresses` field. 1:N child. Row grain: one row per IPv4 address per host.
+
+| Column | Type | Constraint |
+|---|---|---|
+| host_id | INT | PK, FK -> host |
+| ipv4_address | VARCHAR(45) | PK |
+
+```sql
+CREATE TABLE host_ipv4 (
+    host_id      INT NOT NULL REFERENCES host(host_id),
+    ipv4_address VARCHAR(45) NOT NULL,
+    PRIMARY KEY (host_id, ipv4_address)
+);
+```
+
+**ETL:** For each row in `stg_host_raw`, `json.loads(ipv4_addresses)` produces a list. Insert one row per element. 21 hosts have 1 address; inet-firewall has 3 (172.19.128.1, 192.168.230.4, 10.143.0.1).
+
+**Validation rule:** `host.default_ipv4_address` must exist in `host_ipv4.ipv4_address` for the same `host_id`. ETL must verify this after loading (see verification queries).
+
+#### host_ipv6 (24 rows)
+
+1NF resolution of multi-valued `ipv6_addresses` field. 1:N child. Row grain: one row per IPv6 address per host.
+
+| Column | Type | Constraint |
+|---|---|---|
+| host_id | INT | PK, FK -> host |
+| ipv6_address | VARCHAR(45) | PK |
+
+```sql
+CREATE TABLE host_ipv6 (
+    host_id      INT NOT NULL REFERENCES host(host_id),
+    ipv6_address VARCHAR(45) NOT NULL,
+    PRIMARY KEY (host_id, ipv6_address)
+);
+```
+
+**ETL:** Same pattern as host_ipv4. 21 hosts have 1; inet-firewall has 3.
+
+**Validation rule:** `host.default_ipv6_address` must exist in `host_ipv6.ipv6_address` for the same `host_id`.
+
+#### host_log_config (66 rows)
+
+Child entity for per-host log collection configuration. Weak entity in EER terms, identified by `(host_id, log_path)` (candidate business key, verified unique in current data-should be enforced with a UNIQUE constraint). Row grain: one row per log config per host.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| config_id | SERIAL | PK | Surrogate key |
+| host_id | INT | FK -> host, NOT NULL | |
+| log_path | TEXT | NOT NULL | e.g. "/var/log/audit/audit.log" |
+| log_type | VARCHAR(50) | NOT NULL | 11 distinct log types |
+| codec | TEXT | nullable | String or JSON-serialized dict |
+| file_chunk_size | INT | nullable | |
+| add_field_json | TEXT | nullable | **Practical exception:** opaque JSON payload retained as-is (see design decisions) |
+
+```sql
+CREATE TABLE host_log_config (
+    config_id       SERIAL PRIMARY KEY,
+    host_id         INT NOT NULL REFERENCES host(host_id),
+    log_path        TEXT NOT NULL,
+    log_type        VARCHAR(50) NOT NULL,
+    codec           TEXT,
+    file_chunk_size INT,
+    add_field_json  TEXT,
+    UNIQUE (host_id, log_path)
+);
+```
+
+**ETL:** `stg_host_log_config_raw` contains only the staging surrogate `host_id`, not `host_key`. To resolve the final `host.host_id` FK:
+1. Join `stg_host_log_config_raw` to `stg_host_raw` on `stg_host_log_config_raw.host_id = stg_host_raw.host_id` to recover `host_key`.
+2. Join to final `host` on `host.host_key = stg_host_raw.host_key` to get the final `host.host_id`.
+3. Insert into `host_log_config` using the final `host.host_id`, copying `log_path`, `log_type`, `codec`, `file_chunk_size`, `add_field_json` directly.
+
+11 distinct log types: apache_access, apache_error, audit, auth, dnsmasq, dnsteal, kyoushi, metricsbeat, openvpn, pcap, syslog.
+
+`add_field_json` contains up to 4 metadata keys: `[@metadata][kyoushi][sm]` (string), `[@metadata][kyoushi][httpd_dirs]` (array), `[@metadata][pipeline]` (string), `[@metadata][host_override]` (boolean).
+
+### Resolved Design Decisions
+
+| # | Decision | Resolution | Rationale |
+|---|---|---|---|
+| 1 | Combine `host_ipv4` + `host_ipv6`? | Keep separate | Different formats/semantics; never compared in analysis |
+| 2 | Decompose `add_field_json`? | **Retain as opaque JSON payload** | Deliberate practical exception. Only 4 keys; config-level metadata not queried in analysis. Strictly speaking a 1NF violation, but decomposing adds a table for negligible analytical value. Scoped out of DAT-59. |
+| 3 | Drop `timezone`? | Keep | Real source data; constant "UTC" but dropping constants is optimization, not normalization |
+| 4 | Redundancy: `default_ipv4/ipv6` on host vs. child tables? | Keep both; enforce with ETL validation | Default is a scalar property of the host; child tables list all addresses. ETL verifies `default_ipv4_address` exists in `host_ipv4` for the same host (see verification queries) |
+| 5 | `host_group` as all-key junction vs. separate `group` entity? | All-key junction | 17 stable groups with no attributes of their own |
+| 6 | FD4 (`openvpn_user -> username`)? | Ignore for now | Coincidental in 3 hosts; not a business rule. May revisit when VPN log normalization (openvpn.log) is in scope |
+| 7 | Rename `distribution` table? | Named `os_release` | Row grain is one row per OS release; avoids confusion with `distribution` column name |
+
+### 3NF Loading Order: Host Domain
+
+```
+Phase 1: os_release                (2 rows, no FK deps)
+Phase 2: host                      (22 rows, FK -> os_release)
+Phase 3: host_group                (63 rows, FK -> host)
+         host_fqdn                 (20 rows, FK -> host)
+         host_ipv4                 (24 rows, FK -> host)
+         host_ipv6                 (24 rows, FK -> host)
+         host_log_config           (66 rows, FK -> host)
+         (all 5 independent, can load in parallel)
+```
+
+### Verification Queries: Host Domain
+
+```sql
+-- Row counts (exact expected values for ETL verification)
+SELECT 'os_release' AS tbl, COUNT(*) AS actual, 2 AS expected FROM os_release
+UNION ALL SELECT 'host', COUNT(*), 22 FROM host
+UNION ALL SELECT 'host_group', COUNT(*), 63 FROM host_group
+UNION ALL SELECT 'host_fqdn', COUNT(*), 20 FROM host_fqdn
+UNION ALL SELECT 'host_ipv4', COUNT(*), 24 FROM host_ipv4
+UNION ALL SELECT 'host_ipv6', COUNT(*), 24 FROM host_ipv6
+UNION ALL SELECT 'host_log_config', COUNT(*), 66 FROM host_log_config;
+
+-- os_release lookup correctness
+SELECT * FROM os_release;
+-- Expected: (bionic, Ubuntu, 18.04), (stretch, Debian, 9.11)
+
+-- Every host has a valid os_release_id
+SELECT h.host_id, h.host_key
+FROM host h
+LEFT JOIN os_release r ON h.os_release_id = r.os_release_id
+WHERE r.os_release_id IS NULL;
+-- Expected: 0 rows
+
+-- Groups per host (should be 2-5)
+SELECT h.host_key, COUNT(*) AS group_count
+FROM host h
+JOIN host_group hg ON h.host_id = hg.host_id
+GROUP BY h.host_key
+ORDER BY group_count;
+-- Expected: min 2, max 5, total 63
+
+-- default_ipv4 must exist in host_ipv4 for same host (ETL validation rule)
+SELECT h.host_key, h.default_ipv4_address
+FROM host h
+WHERE NOT EXISTS (
+    SELECT 1 FROM host_ipv4 ip
+    WHERE ip.host_id = h.host_id
+      AND ip.ipv4_address = h.default_ipv4_address
+);
+-- Expected: 0 rows (every default must be in the child table)
+
+-- default_ipv6 must exist in host_ipv6 for same host (ETL validation rule)
+SELECT h.host_key, h.default_ipv6_address
+FROM host h
+WHERE NOT EXISTS (
+    SELECT 1 FROM host_ipv6 ip
+    WHERE ip.host_id = h.host_id
+      AND ip.ipv6_address = h.default_ipv6_address
+);
+-- Expected: 0 rows
+
+-- Log configs per host (should be 1-9)
+SELECT h.host_key, COUNT(*) AS config_count
+FROM host h
+JOIN host_log_config lc ON h.host_id = lc.host_id
+GROUP BY h.host_key
+ORDER BY config_count;
+-- Expected: min 1, max 9, total 66
+
+-- Candidate business key uniqueness for host_log_config
+SELECT host_id, log_path, COUNT(*)
+FROM host_log_config
+GROUP BY host_id, log_path
+HAVING COUNT(*) > 1;
+-- Expected: 0 rows
+```
+
+---
+
+## 3NF Transformation: Audit Events (Pending)
 
 From `stg_audit_line_raw`:
 
 | Staging source | 3NF target(s) | Transformation |
 |---|---|---|
-| Common fields | `audit_event` (supertype) | Direct mapping + host_id FK lookup via source_host |
+| Common fields | `audit_event` (supertype) | Direct mapping + host_id FK lookup via `host.host_key` |
 | `msg` blob (PAM types) | `audit_pam_event` (subtype) | Parse msg, route by type |
 | Top-level LOGIN fields | `audit_login_event` (subtype) | Direct mapping |
 | `msg` blob (SERVICE types) | `audit_service_event` (subtype) | Parse msg, route by type |
 | Top-level kernel fields | `audit_kernel_event` (subtype) | Direct mapping |
 
-Key decisions for iteration 2:
+Key decisions pending:
 - host_id FK: look up `source_host` in `host.host_key` to get `host_id`
 - Sentinel handling for auid/ses (store as-is vs. NULL)
 - Dropped columns: a0-a3, items, ppid, gid, euid, suid, fsuid, egid, sgid, fsgid (low analytical value; can add back if needed)
 
-### Labels: Staging to 3NF
+---
+
+## 3NF Transformation: Attack Labels (Pending)
 
 From `stg_attack_label_line_raw`:
 
@@ -615,25 +973,32 @@ From `stg_attack_label_line_raw`:
 | `rules_json` | Junction table (one row per rule per label per record) | Parse JSON dict of arrays |
 | (external taxonomy) | `attack_phase` lookup table | 22 labels to 7 phases |
 
-Key decisions for iteration 2:
+Key decisions pending:
 - Exact junction table naming and schema
 - Whether `attack_phase` lookup is a table or a column on the label entity
 - Indexing strategy given 87.4% data skew toward dnsmasq.log
 
-### Full 3NF Loading Order (Preview)
+---
+
+## Full 3NF Loading Order
 
 ```
-1. distribution            (no FK deps)
-2. host                    (FK -> distribution)
-3. host_group, host_fqdn,  (FK -> host, parallel)
-   host_ipv4, host_ipv6,
-   host_log_config
-4. audit_event             (FK -> host)
-5. audit_pam_event,        (FK -> audit_event, parallel)
-   audit_login_event,
-   audit_service_event,
-   audit_kernel_event
-6. label junction tables   (FK -> label lookup + provenance join)
+Host domain (finalized):
+  1. os_release                (2 rows, no FK deps)
+  2. host                      (22 rows, FK -> os_release)
+  3. host_group, host_fqdn,    (FK -> host, parallel)
+     host_ipv4, host_ipv6,
+     host_log_config
+
+Audit domain (pending):
+  4. audit_event               (FK -> host)
+  5. audit_pam_event,          (FK -> audit_event, parallel)
+     audit_login_event,
+     audit_service_event,
+     audit_kernel_event
+
+Labels domain (pending):
+  6. label junction tables     (FK -> label lookup + provenance join)
 ```
 
-Total: 12+ tables across 3-4 loading phases. Exact count depends on label decomposition decisions.
+Total: 12+ tables across 3-4 loading phases. Exact count depends on audit and label decomposition decisions.

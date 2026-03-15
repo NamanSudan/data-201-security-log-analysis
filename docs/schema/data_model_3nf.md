@@ -1,80 +1,92 @@
-# 3NF Data Model-hosts + audit_events
+# 3NF Data Model
 
 Source notebooks: `01_explore_hosts.ipynb`, `05_explore_audit_intranet.ipynb`, `07_explore_audit_internal_share.ipynb`.
 EER diagram (Chen): `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
+Normalization spec: `docs/schema/normalization_raw_to_3nf.md`.
+
+**Status:**
+- Host domain (sections 2.1-2.7): **Finalized.** Design decisions resolved in DAT-59.
+- Audit domain (sections 2.8-2.12): **Preliminary design.** Needs verification before implementation.
 
 ---
 
 ## 1. Source Files
 
-| # | Notebook | Source path (under russellmitchell/) | Raw table | Rows | Cols | Domain |
+| # | Notebook | Source path (under russellmitchell/) | Staging table | Rows | Cols | Domain |
 |---|---|---|---|---|---|---|
-| 1 | 01 | `processing/config/servers.yaml` | `hosts_raw` | 22 | 15 | Host inventory (all 22 testbed machines) |
-| 2 | 05 | `gather/intranet_server/logs/audit/audit.log` | `audit_events_intranet_raw` | 2,316 | 40 | Linux auditd-privilege escalation context |
-| 3 | 07 | `gather/internal_share/logs/audit/audit.log` | `audit_events_internal_share_raw` | 732 | 40 | Linux auditd-data exfiltration context |
+| 1 | 01 | `processing/config/servers.yaml` | `stg_host_raw` | 22 | 15 | Host inventory (all 22 testbed machines) |
+| 2 | 01 | (nested in #1) | `stg_host_log_config_raw` | 66 | 7 | Host log configurations |
+| 3 | 05 | `gather/intranet_server/logs/audit/audit.log` | `stg_audit_line_raw` | 2,316 | 44 | Linux auditd-privilege escalation context |
+| 4 | 07 | `gather/internal_share/logs/audit/audit.log` | `stg_audit_line_raw` | 732 | 44 | Linux auditd-data exfiltration context |
 
-Source 2 and 3 use the same auditd format and identical 40-column schema, but come from different hosts with different attack semantics:
-- **intranet_server**: SSH login by attacker (172.19.131.174), `su` to jhall, `sudo cat /etc/shadow`. 15 event types, 9 labeled attack lines.
-- **internal_share**: Attacker-started exfiltration service (`unit=put`, dnsteal). 11 event types, 2 labeled attack lines.
+Source 3 and 4 use the same auditd format and share a single staging table (`stg_audit_line_raw`, 3,048 rows total), discriminated by `source_host`.
 
 ---
 
 ## 2. Entity Catalog
 
-### 2.1 host
+### 2.1 os_release
 
-Central reference entity. Every machine in the AIT testbed.
-
-| Attribute | Type | Constraint | Notes |
-|---|---|---|---|
-| host_id | SERIAL | PK | Surrogate key |
-| host_key | VARCHAR(50) | UNIQUE, NOT NULL | YAML dict key (e.g. "intranet-server") |
-| hostname | VARCHAR(100) | UNIQUE, NOT NULL | Machine hostname |
-| username | VARCHAR(50) | nullable | Only 7 employee hosts |
-| openvpn_user | VARCHAR(50) | nullable | Only 3 remote employees |
-| default_ipv4_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host |
-| default_ipv6_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host |
-| timezone | VARCHAR(10) | NOT NULL | "UTC" for all 22 hosts |
-| distribution_id | INT | FK -> distribution | 3NF lookup |
-
-### 2.2 distribution
-
-3NF lookup entity. Eliminates transitive dependency: `distribution_release -> distribution, distribution_version`.
+3NF lookup entity. Resolves transitive dependency: `distribution_release -> distribution, distribution_version`. Row grain: one row per OS release.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
-| distribution_id | SERIAL | PK | Surrogate key |
+| os_release_id | SERIAL | PK | Surrogate key |
+| distribution_release | VARCHAR(20) | UNIQUE, NOT NULL | Natural key; "bionic" or "stretch" (determinant) |
 | distribution | VARCHAR(50) | NOT NULL | "Ubuntu" or "Debian" |
-| distribution_release | VARCHAR(20) | UNIQUE, NOT NULL | "bionic" or "stretch" (determinant) |
 | distribution_version | VARCHAR(20) | NOT NULL | "18.04" or "9.11" |
 
 2 rows total. `distribution_release` is the natural key (candidate key).
 
+### 2.2 host
+
+Central reference entity. Every machine in the AIT testbed. Row grain: one row per host.
+
+`host_key` is the downstream integration key: it aligns with `stg_audit_line_raw.source_host` and `stg_attack_label_line_raw.source_host`, enabling FK resolution when loading other domains into 3NF.
+
+| Attribute | Type | Constraint | Notes |
+|---|---|---|---|
+| host_id | SERIAL | PK | Surrogate key |
+| host_key | VARCHAR(50) | UNIQUE, NOT NULL | YAML dict key (e.g. "intranet_server"); integration key for cross-domain FK resolution |
+| hostname | VARCHAR(100) | UNIQUE, NOT NULL | Machine hostname |
+| username | VARCHAR(50) | nullable | Only 7 employee hosts |
+| openvpn_user | VARCHAR(50) | nullable | Only 3 remote employees |
+| default_ipv4_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host. Must also exist in `host_ipv4` for same host. |
+| default_ipv6_address | VARCHAR(45) | NOT NULL | Single-valued; always 1 per host. Must also exist in `host_ipv6` for same host. |
+| timezone | VARCHAR(10) | NOT NULL | "UTC" for all 22 hosts (retained as source data) |
+| os_release_id | INT | FK -> os_release, NOT NULL | 3NF lookup |
+
+22 rows total.
+
 ### 2.3 host_group
 
-1NF junction entity. Decomposes multi-valued `groups` field.
+1NF junction entity (M:N). Decomposes multi-valued `groups` field.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
 | host_id | INT | PK, FK -> host | |
-| group_name | VARCHAR(50) | PK | 17 distinct groups (adm, sudo, www-data, ...) |
+| group_name | VARCHAR(50) | PK | 17 distinct groups (attacker, servers, dmz, employee, ...) |
 
 Composite PK (host_id, group_name). Each host has 2-5 groups.
 
+63 rows total.
+
 ### 2.4 host_fqdn
 
-1NF junction entity. Decomposes multi-valued `fqdns` field.
+1NF child entity (1:N). Decomposes multi-valued `fqdns` field.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
 | host_id | INT | PK, FK -> host | |
 | fqdn | VARCHAR(255) | PK | 0-4 FQDNs per host |
 
-Composite PK (host_id, fqdn). Some hosts have 0 FQDNs (NULL in raw -> no rows here).
+Composite PK (host_id, fqdn). 7 hosts have 0 FQDNs (NULL in staging -> no rows here).
+
+20 rows total.
 
 ### 2.5 host_ipv4
 
-1NF junction entity. Decomposes multi-valued `ipv4_addresses` field.
+1NF child entity (1:N). Decomposes multi-valued `ipv4_addresses` field.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -83,9 +95,11 @@ Composite PK (host_id, fqdn). Some hosts have 0 FQDNs (NULL in raw -> no rows he
 
 Composite PK (host_id, ipv4_address).
 
+24 rows total.
+
 ### 2.6 host_ipv6
 
-1NF junction entity. Decomposes multi-valued `ipv6_addresses` field.
+1NF child entity (1:N). Decomposes multi-valued `ipv6_addresses` field.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -94,9 +108,11 @@ Composite PK (host_id, ipv4_address).
 
 Composite PK (host_id, ipv6_address).
 
+24 rows total.
+
 ### 2.7 host_log_config
 
-Child entity for the composite+multi-valued `logs` field (already separated during raw loading).
+Child entity (weak entity in EER). Composite+multi-valued `logs` field already separated during staging. Row grain: one row per log config per host.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -104,20 +120,30 @@ Child entity for the composite+multi-valued `logs` field (already separated duri
 | host_id | INT | FK -> host, NOT NULL | |
 | log_path | TEXT | NOT NULL | e.g. "/var/log/audit/audit.log" |
 | log_type | VARCHAR(50) | NOT NULL | 11 distinct types |
-| codec | VARCHAR(20) | nullable | |
+| codec | TEXT | nullable | String or JSON-serialized dict |
 | file_chunk_size | INT | nullable | |
-| add_field_json | TEXT | nullable | Serialized metadata (4 distinct keys) |
+| add_field_json | TEXT | nullable | Practical exception: opaque JSON payload retained as-is (not fully normalized) |
+
+UNIQUE constraint on (host_id, log_path)-candidate business key, verified unique in current data.
 
 66 rows total (1-9 configs per host).
 
-### 2.8 audit_event (supertype)
+---
+
+## NEEDS VERIFICATION / PRELIMINARY DESIGN
+
+The entities below (2.8-2.12) are preliminary designs from initial exploration. They need verification and finalization before implementation, similar to the process completed for the host domain above.
+
+---
+
+### 2.8 audit_event (supertype)-PRELIMINARY
 
 Common attributes shared by all audit log event types. Both intranet_server and internal_share rows load into this single table, discriminated by `host_id`.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
 | event_id | SERIAL | PK | Surrogate key |
-| host_id | INT | FK -> host, NOT NULL | Links to source host |
+| host_id | INT | FK -> host, NOT NULL | Links to source host via `host.host_key` |
 | line_number | INT | NOT NULL | Line in source file (unique per host) |
 | type | VARCHAR(20) | NOT NULL | Discriminator (15 distinct across both files) |
 | epoch | DOUBLE PRECISION | NOT NULL | Unix timestamp with ms |
@@ -131,7 +157,7 @@ Common attributes shared by all audit log event types. Both intranet_server and 
 3,048 rows total (2,316 from intranet + 732 from internal_share).
 Unique constraint on (host_id, line_number) serves as a natural composite key.
 
-### 2.9 audit_pam_event (subtype)
+### 2.9 audit_pam_event (subtype)-PRELIMINARY
 
 PAM-related event types. Attributes are unpacked from the `msg` TEXT blob (1NF fix).
 
@@ -154,7 +180,7 @@ Event types: USER_ACCT, CRED_ACQ, USER_START, USER_END, CRED_DISP, USER_AUTH, CR
 
 Note: cmd, cwd, id are specific to USER_CMD (1 event in intranet, 0 in internal_share). They are nullable columns on this subtype rather than a separate subtype due to minimal occurrence.
 
-### 2.10 audit_login_event (subtype)
+### 2.10 audit_login_event (subtype)-PRELIMINARY
 
 LOGIN kernel events. Attributes are top-level fields (not from msg blob).
 
@@ -169,7 +195,7 @@ LOGIN kernel events. Attributes are top-level fields (not from msg blob).
 Event types: LOGIN.
 410 rows (304 intranet + 106 internal_share).
 
-### 2.11 audit_service_event (subtype)
+### 2.11 audit_service_event (subtype)-PRELIMINARY
 
 Systemd service lifecycle events. Attributes unpacked from `msg` blob (1NF fix).
 
@@ -187,7 +213,7 @@ Systemd service lifecycle events. Attributes unpacked from `msg` blob (1NF fix).
 Event types: SERVICE_START, SERVICE_STOP.
 555 rows (471 intranet + 84 internal_share). The 2 attack events (unit=put, dnsteal exfiltration) are SERVICE_START/SERVICE_STOP in this subtype.
 
-### 2.12 audit_kernel_event (subtype)
+### 2.12 audit_kernel_event (subtype)-PRELIMINARY
 
 Kernel-level events (AppArmor, syscall, proctitle). Attributes are top-level fields.
 
@@ -219,18 +245,16 @@ Note: Within this subtype, AVC/SYSCALL/PROCTITLE each populate different columns
 
 | Relationship | From | To | Cardinality | Participation | Notes |
 |---|---|---|---|---|---|
-| belongs_to | host | distribution | N:1 | total (host) : partial (dist) | Every host has exactly 1 distribution |
-| has_group | host | host_group | 1:N | total : total | Every host has 2-5 groups |
+| runs_on | host | os_release | N:1 | total (host) : partial (os_release) | Every host has exactly 1 OS release |
+| has_group | host | host_group | 1:N (M:N) | total : total | Every host has 2-5 groups; M:N bridge |
 | has_fqdn | host | host_fqdn | 1:N | partial : total | Some hosts have 0 FQDNs |
 | has_ipv4 | host | host_ipv4 | 1:N | total : total | Every host has at least 1 |
 | has_ipv6 | host | host_ipv6 | 1:N | total : total | Every host has at least 1 |
 | has_log_config | host | host_log_config | 1:N | total : total | Every host has 1-9 log configs |
-| generates | host | audit_event | 1:N | partial : total | Only 2 of 22 hosts have audit logs in scope |
-| specializes | audit_event | subtypes | total, disjoint |-| Every event is exactly 1 subtype |
+| generates | host | audit_event | 1:N | partial : total | Only 2 of 22 hosts have audit logs in scope (PRELIMINARY) |
+| specializes | audit_event | subtypes | total, disjoint |-| Every event is exactly 1 subtype (PRELIMINARY) |
 
-The **generates** relationship is the cross-domain bridge: it connects the host inventory (notebook 01) to the audit events (notebooks 05, 07). The FK `audit_event.host_id` references `host.host_id`. When loading, each audit source file is mapped to its host_id via `host.host_key`:
-- `gather/intranet_server/...` -> host_key = "intranet-server"
-- `gather/internal_share/...` -> host_key = "internal-share-fileserver"
+The **generates** relationship is the cross-domain bridge: it connects the host inventory (notebook 01) to the audit events (notebooks 05, 07). The FK `audit_event.host_id` references `host.host_id`. When loading, each audit source file is mapped to its host_id via `host.host_key = stg_audit_line_raw.source_host`.
 
 The **specializes** relationship is a total, disjoint EER specialization. The `type` attribute on audit_event determines which subtype table holds the row's type-specific fields. Every audit_event row has exactly one corresponding row in exactly one subtype table.
 
@@ -238,32 +262,42 @@ The **specializes** relationship is a total, disjoint EER specialization. The `t
 
 ## 4. Entity Counts
 
+### Host Domain (Finalized)
+
 | Entity | Expected rows | Source |
 |---|---|---|
-| distribution | 2 | Derived from hosts |
+| os_release | 2 | Derived from hosts (2 distinct OS releases) |
 | host | 22 | servers.yaml |
-| host_group | ~75 | 22 hosts x 2-5 groups each |
-| host_fqdn | ~40 | Hosts with FQDNs |
-| host_ipv4 | ~26 | 21 hosts x 1 + inet-firewall x 3 |
-| host_ipv6 | ~26 | Same pattern |
+| host_group | 63 | 22 hosts x 2-5 groups each (sum of all memberships) |
+| host_fqdn | 20 | 7 hosts x 0 + 12 x 1 + 2 x 2 + 1 x 4 |
+| host_ipv4 | 24 | 21 hosts x 1 + inet-firewall x 3 |
+| host_ipv6 | 24 | Same pattern as ipv4 |
 | host_log_config | 66 | 22 hosts x 1-9 configs |
+
+### Audit Domain (Preliminary)
+
+| Entity | Expected rows | Source |
+|---|---|---|
 | audit_event | 3,048 | 2,316 + 732 |
 | audit_pam_event | ~2,540 | PAM event types |
 | audit_login_event | 410 | LOGIN events |
 | audit_service_event | 555 | SERVICE_START + SERVICE_STOP |
 | audit_kernel_event | 24 | AVC + SYSCALL + PROCTITLE |
 
-Subtype rows must sum to audit_event rows: ~2,540 + 410 + 555 + 24 = ~3,529. Discrepancy note: the PAM count includes USER_LOGIN (3+0=3 events from intranet only) which also has `msg` blob. Exact counts should be verified during loading. The 4 subtypes are exhaustive and disjoint over the 15 event types.
+Subtype counts above are preliminary estimates. The 4 subtypes are intended to be exhaustive and disjoint over the 15 event types, but exact per-subtype row counts have not yet been verified. Final counts must be validated during implementation to confirm they sum to the audit_event total (3,048).
 
 ---
 
 ## 5. Loading Order (FK Dependencies)
 
-Tables must be populated in this order due to foreign key constraints:
+### Host Domain (Finalized)
 
-1. `distribution` (no FK dependencies)
-2. `host` (FK -> distribution)
+1. `os_release` (2 rows, no FK dependencies)
+2. `host` (22 rows, FK -> os_release)
 3. `host_group`, `host_fqdn`, `host_ipv4`, `host_ipv6`, `host_log_config` (FK -> host; can load in parallel)
+
+### Audit Domain (Preliminary)
+
 4. `audit_event` (FK -> host)
 5. `audit_pam_event`, `audit_login_event`, `audit_service_event`, `audit_kernel_event` (FK -> audit_event; can load in parallel)
 
@@ -275,10 +309,10 @@ Tables must be populated in this order due to foreign key constraints:
 classDiagram
     direction TB
 
-    class distribution {
-        +int distribution_id PK
-        +varchar distribution
+    class os_release {
+        +int os_release_id PK
         +varchar distribution_release UK
+        +varchar distribution
         +varchar distribution_version
     }
 
@@ -291,7 +325,7 @@ classDiagram
         +varchar default_ipv4_address
         +varchar default_ipv6_address
         +varchar timezone
-        +int distribution_id FK
+        +int os_release_id FK
     }
 
     class host_group {
@@ -319,7 +353,7 @@ classDiagram
         +int host_id FK
         +text log_path
         +varchar log_type
-        +varchar codec
+        +text codec
         +int file_chunk_size
         +text add_field_json
     }
@@ -388,7 +422,7 @@ classDiagram
         +text proctitle
     }
 
-    host --> distribution : belongs_to N..1
+    host --> os_release : runs_on N..1
     host "1" --> "*" host_group : has_group
     host "1" --> "*" host_fqdn : has_fqdn
     host "1" --> "*" host_ipv4 : has_ipv4
@@ -405,33 +439,33 @@ classDiagram
 
 ## 7. How to Query Across Domains
 
-Filter audit events by source host:
+Get host with its groups and OS release:
+
+```sql
+SELECT h.hostname, r.distribution, r.distribution_version, hg.group_name
+FROM host h
+JOIN os_release r ON h.os_release_id = r.os_release_id
+JOIN host_group hg ON h.host_id = hg.host_id
+WHERE h.host_key = 'intranet_server';
+```
+
+Filter audit events by source host (PRELIMINARY-audit schema not yet finalized):
 
 ```sql
 SELECT ae.event_id, ae.type, ae.timestamp, ape.op, ape.acct
 FROM audit_event ae
 JOIN audit_pam_event ape ON ae.event_id = ape.event_id
 JOIN host h ON ae.host_id = h.host_id
-WHERE h.host_key = 'intranet-server';
+WHERE h.host_key = 'intranet_server';
 ```
 
-Find the exfiltration service events:
+Find the exfiltration service events (PRELIMINARY):
 
 ```sql
 SELECT ae.event_id, ae.type, ae.timestamp, ase.unit
 FROM audit_event ae
 JOIN audit_service_event ase ON ae.event_id = ase.event_id
 JOIN host h ON ae.host_id = h.host_id
-WHERE h.host_key = 'internal-share-fileserver'
+WHERE h.host_key = 'internal_share'
   AND ase.unit = 'put';
-```
-
-Get host with its groups and distribution:
-
-```sql
-SELECT h.hostname, d.distribution, d.distribution_version, hg.group_name
-FROM host h
-JOIN distribution d ON h.distribution_id = d.distribution_id
-JOIN host_group hg ON h.host_id = hg.host_id
-WHERE h.host_key = 'intranet-server';
 ```
