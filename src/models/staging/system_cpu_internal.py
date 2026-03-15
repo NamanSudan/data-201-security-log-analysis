@@ -9,8 +9,7 @@ Notebook: 08_system_cpu_internal_share.ipynb
 Candidate key: (source_host, source_log, event_timestamp)
 """
 
-from sqlalchemy import BigInteger, Integer, Numeric, SmallInteger, String
-from sqlalchemy.dialects.postgresql import TIMESTAMPTZ
+from sqlalchemy import BigInteger, DateTime, Integer, Numeric, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -22,7 +21,7 @@ class StgSystemCpuEvents(Base):
     row_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     source_host: Mapped[str] = mapped_column(String(30), nullable=False)
     source_log: Mapped[str] = mapped_column(String(100), nullable=False)
-    event_timestamp: Mapped[str] = mapped_column(TIMESTAMPTZ, nullable=False)
+    event_timestamp: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=False)
     hostname: Mapped[str] = mapped_column(String(255), nullable=True)
     cpu_total_pct: Mapped[float] = mapped_column(Numeric(6, 4), nullable=True)
     cpu_user_pct: Mapped[float] = mapped_column(Numeric(6, 4), nullable=True)

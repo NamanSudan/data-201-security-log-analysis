@@ -9,8 +9,8 @@ Notebook: 03_explore_httpsaccess_log_intranet.ipynb
 Candidate key: (source_host, source_log, line_number)
 """
 
-from sqlalchemy import BigInteger, Integer, SmallInteger, String, Text
-from sqlalchemy.dialects.postgresql import INET, TIMESTAMPTZ
+from sqlalchemy import BigInteger, DateTime, Integer, SmallInteger, String, Text
+from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -23,7 +23,7 @@ class StgHttpAccess(Base):
     source_host: Mapped[str] = mapped_column(String(30), nullable=False)
     source_log: Mapped[str] = mapped_column(String(100), nullable=False)
     line_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    timestamp: Mapped[str] = mapped_column(TIMESTAMPTZ, nullable=True)
+    timestamp: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=True)
     raw_timestamp: Mapped[str] = mapped_column(String(30), nullable=True)
     client_ip: Mapped[str] = mapped_column(INET, nullable=False)
     ident: Mapped[str] = mapped_column(String(255), nullable=True)

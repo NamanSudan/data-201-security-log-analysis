@@ -9,8 +9,8 @@ Notebook: 02_explore_httpserror_log_intranet.ipynb
 Candidate key: (source_host, source_log, line_number)
 """
 
-from sqlalchemy import Integer, String, Text
-from sqlalchemy.dialects.postgresql import INET, TIMESTAMPTZ
+from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -23,7 +23,7 @@ class StgHttpErrors(Base):
     source_host: Mapped[str] = mapped_column(String(30), nullable=False)
     source_log: Mapped[str] = mapped_column(String(100), nullable=False)
     line_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    timestamp: Mapped[str] = mapped_column(TIMESTAMPTZ, nullable=True)
+    timestamp: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=True)
     raw_timestamp: Mapped[str] = mapped_column(String(40), nullable=True)
     module: Mapped[str] = mapped_column(String(20), nullable=False)
     level: Mapped[str] = mapped_column(String(10), nullable=False)
