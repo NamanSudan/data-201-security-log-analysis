@@ -149,6 +149,7 @@ Each subtype has **event_id** as PK and FK → `audit_event(event_id)`. Exactly 
 | event_id  | INT         | PK, FK → audit_event(event_id) | Same key as supertype. |
 
 - **Event types:** SERVICE_START, SERVICE_STOP.
+- **Primary msg-derived attribute (EER):** **unit** (service name, e.g. `put`, `apt-daily`) — in **audit_message**; join on event_id to get unit, comm, exe, etc.
 - **Row count:** 555 (471 intranet + 84 internal_share).
 - **3NF:** Single-column key; no other attributes. Service fields (unit, comm, exe, etc.) in **audit_message** only.
 
@@ -161,6 +162,7 @@ Each subtype has **event_id** as PK and FK → `audit_event(event_id)`. Exactly 
 | event_id  | INT         | PK, FK → audit_event(event_id) | Same key as supertype. |
 
 - **Event types:** USER_LOGIN.
+- **Primary msg-derived attribute (EER):** **tty** (terminal, e.g. `ssh`) — in **audit_message**; join on event_id to get tty, exe, hostname, addr, etc.
 - **Row count:** 3.
 - **3NF:** Single-column key; no other attributes. Msg content in **audit_message** only.
 
@@ -248,12 +250,12 @@ Optional (low-value; see §10): a0, a1, a2, a3 VARCHAR(20); items, ppid, gid, eu
 
 #### 6.3.9 Subtype summary
 
-| Subtype table            | Key      | Non-key columns | 3NF |
-|--------------------------|----------|------------------|-----|
-| audit_pam_event          | event_id | none             | Single key; msg in audit_message. |
-| audit_service_event       | event_id | none             | Single key; msg in audit_message. |
-| audit_user_login_event    | event_id | none             | Single key; msg in audit_message. |
-| audit_user_cmd_event      | event_id | none             | Single key; msg in audit_message. |
+| Subtype table            | Key      | Non-key columns | Primary msg-derived attr (EER) | 3NF |
+|--------------------------|----------|------------------|--------------------------------|-----|
+| audit_pam_event          | event_id | none             | —                              | Single key; msg in audit_message. |
+| audit_service_event       | event_id | none             | **unit** (in audit_message)    | Single key; msg in audit_message. |
+| audit_user_login_event    | event_id | none             | **tty** (in audit_message)     | Single key; msg in audit_message. |
+| audit_user_cmd_event      | event_id | none             | cmd, cwd, id (in audit_message)| Single key; msg in audit_message. |
 | audit_login_event         | event_id | old_auid, old_ses, tty, res | All depend only on event_id. |
 | audit_syscall_event       | event_id | arch, syscall, success, exit, exe, comm, key (+ optional) | All depend only on event_id. |
 | audit_avc_event           | event_id | apparmor, operation, profile, name, info, comm | All depend only on event_id. |
