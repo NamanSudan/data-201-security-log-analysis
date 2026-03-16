@@ -20,7 +20,7 @@ The design is **sound**: staging grain, 1NF→2NF→3NF path, and final table se
 ## 2. Row grain of `stg_attack_label_line_raw`
 
 - **Grain:** One row per **labeled line** in a source log file (one annotation record per line in one of the 8 label JSONL files).
-- **Candidate key:** `(source_host, source_log, line_number)` — unique; `row_id` is surrogate PK.
+- **Candidate key:** `(source_host, source_log, line_number)` - unique; `row_id` is surrogate PK.
 - **Count:** 61,862 rows.
 
 ---
@@ -31,7 +31,7 @@ The design is **sound**: staging grain, 1NF→2NF→3NF path, and final table se
 |-------|---------|-----|-----|-----|
 | **labels_json** | One TEXT cell: JSON array of 2–4 label strings. | **Removed** from line table; replaced by junction table: one row per (line, label). | No change. | Junction references **label_id** (FK to `attack_label`); label names live in `attack_label` with `phase_id`. |
 | **rules_json** | One TEXT cell: JSON dict label → list of rule names. | **Removed**; replaced by junction: one row per (line, label, rule). | No change. | Junction uses **label_id** and stores `rule_name` (or optional `rule_id`). |
-| **row_id** | Surrogate PK. | Not carried; 3NF line table gets its own PK (`labeled_line_id`). | — | — |
+| **row_id** | Surrogate PK. | Not carried; 3NF line table gets its own PK (`labeled_line_id`). | - | - |
 | **source_host, source_log, line_number** | Provenance / candidate key. | Stay on the single “line” entity (`labeled_line`). | No change. | Unchanged; enable join to host and audit. |
 
 ---
