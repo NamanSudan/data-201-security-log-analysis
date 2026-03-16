@@ -56,7 +56,7 @@ _MSG_ATTRIBUTES = (
 
 # Outer-field columns sourced from staging for each outer-field subtype.
 _LOGIN_FIELDS = ("old_auid", "old_ses", "tty", "res")
-_SYSCALL_FIELDS = ("arch", "syscall", "success", "exit", "exe", "comm", "key")
+_SYSCALL_FIELDS = ("arch", "syscall", "success", "exit", "exe", "comm", "tty", "key")
 _AVC_FIELDS = ("apparmor", "operation", "profile", "name", "info", "comm")
 _PROCTITLE_FIELDS = ("proctitle",)
 
@@ -177,7 +177,7 @@ def extract_audit_messages(stg_rows: list, event_id_map: dict[tuple[int, int], i
     Returns:
         List of dicts matching AuditMessage columns.
 
-    Expected: ~2,540 rows (events where msg is not null).
+    Expected: 2,614 rows (validated: events where msg is not null).
     """
     rows = []
     for r in stg_rows:

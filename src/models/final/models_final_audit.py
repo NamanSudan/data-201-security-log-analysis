@@ -2,9 +2,9 @@
 
 Tables:
   audit_event            - Supertype; one row per raw audit log line (3,048 rows)
-  audit_message          - Unpacked msg blob; 1NF resolution (0..1 per event, ~2,540 rows)
+  audit_message          - Unpacked msg blob; 1NF resolution (0..1 per event, 2,614 rows)
   audit_pam_event        - Subtype: PAM events (CRED_ACQ, USER_ACCT, USER_START, USER_END,
-                           CRED_DISP, USER_AUTH, CRED_REFR) (~1,968 rows)
+                           CRED_DISP, USER_AUTH, CRED_REFR) (2,055 rows)
   audit_service_event    - Subtype: SERVICE_START, SERVICE_STOP (555 rows)
   audit_user_login_event - Subtype: USER_LOGIN (3 rows)
   audit_user_cmd_event   - Subtype: USER_CMD (1 row)
@@ -76,7 +76,7 @@ class AuditMessage(Base):
     res: Mapped[str | None] = mapped_column(String(20), nullable=True)  # e.g. "success"
     unit: Mapped[str | None] = mapped_column(String(100), nullable=True)  # SERVICE_* events
     comm: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # USER_CMD
+    id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # USER_LOGIN (uid, e.g. 1002)
     cwd: Mapped[str | None] = mapped_column(Text, nullable=True)  # USER_CMD
     cmd: Mapped[str | None] = mapped_column(Text, nullable=True)  # USER_CMD (hex)
 
@@ -174,6 +174,8 @@ class AuditSyscallEvent(Base):
     """Subtype for SYSCALL events.
 
     3NF: PK = event_id; all non-key columns depend only on event_id.
+    tty is a top-level auditd field (e.g. "pts1", "pts0"); all 8 rows non-null.
+    Distinct from msg-embedded terminal in audit_message.
     Note: low-value columns a0-a3, items, ppid, gid, euid, suid, fsuid,
     egid, sgid, fsgid omitted pending open decision (plan §10.3).
     """
@@ -189,6 +191,9 @@ class AuditSyscallEvent(Base):
     exit: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # exit code
     exe: Mapped[str | None] = mapped_column(Text, nullable=True)  # executable path
     comm: Mapped[str | None] = mapped_column(String(50), nullable=True)  # command name
+    tty: Mapped[str | None] = mapped_column(
+        String(30), nullable=True
+    )  # top-level auditd field (e.g. "pts1")
     key: Mapped[str | None] = mapped_column(String(20), nullable=True)  # audit key
 
 

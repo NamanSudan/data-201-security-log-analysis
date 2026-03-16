@@ -41,8 +41,8 @@ from src.parsers.final.audit import (
 # Expected row counts for verification (from audit_3nf_normalization_plan.md §6)
 EXPECTED_COUNTS = {
     "audit_event": 3048,
-    "audit_message": 2540,  # approximate; events with non-null msg
-    "audit_pam_event": 1968,  # approximate; validate from staging
+    "audit_message": 2614,
+    "audit_pam_event": 2055,
     "audit_service_event": 555,
     "audit_user_login_event": 3,
     "audit_user_cmd_event": 1,
@@ -143,14 +143,8 @@ def verify_counts(session: Session) -> bool:
     for table_name, model in all_models.items():
         actual = session.scalar(select(func.count()).select_from(model))
         expected = EXPECTED_COUNTS[table_name]
-        # audit_message and audit_pam_event are approximate; flag large deviations only
-        approximate = table_name in ("audit_message", "audit_pam_event")
-        if approximate:
-            ok = actual is not None and abs(actual - expected) <= 50
-            status = "OK (approx)" if ok else "MISMATCH"
-        else:
-            ok = actual == expected
-            status = "OK" if ok else "MISMATCH"
+        ok = actual == expected
+        status = "OK" if ok else "MISMATCH"
         if not ok:
             all_ok = False
         print(f"  {table_name}: {actual} rows (expected {expected}) [{status}]")
