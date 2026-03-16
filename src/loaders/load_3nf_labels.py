@@ -69,9 +69,7 @@ def _load_attack_phase(session: Session) -> dict[str, int]:
     return {obj.phase_name: obj.phase_id for obj in objects}
 
 
-def _load_attack_label(
-    session: Session, phase_name_to_id: dict[str, int]
-) -> dict[str, int]:
+def _load_attack_label(session: Session, phase_name_to_id: dict[str, int]) -> dict[str, int]:
     """Phase 2: Load attack_label lookup table (seed from taxonomy).
 
     Resolves phase_name -> phase_id from seed rows. Returns: {label_name: label_id} mapping.
@@ -98,8 +96,7 @@ def _load_labeled_line(
     session.add_all(objects)
     session.flush()
     return {
-        (obj.source_host, obj.source_log, obj.line_number): obj.labeled_line_id
-        for obj in objects
+        (obj.source_host, obj.source_log, obj.line_number): obj.labeled_line_id for obj in objects
     }
 
 

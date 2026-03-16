@@ -19,8 +19,16 @@ class StgAttackLabelLineRaw(Base):
     Candidate key (source_host, source_log, line_number) is unique; enforced
     so duplicate loads or re-runs do not create duplicate rows.
     """
+
     __tablename__ = "stg_attack_label_line_raw"
-    __table_args__ = (UniqueConstraint("source_host", "source_log", "line_number", name="uq_stg_attack_label_line_raw_provenance"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "source_host",
+            "source_log",
+            "line_number",
+            name="uq_stg_attack_label_line_raw_provenance",
+        ),
+    )
 
     row_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     source_host: Mapped[str] = mapped_column(String(30), nullable=False)
