@@ -24,6 +24,13 @@ from src.models.final.host import (
     HostLogConfig,
     OsRelease,
 )
+from src.models.final.labels import (
+    AttackLabel,
+    AttackPhase,
+    LabeledLine,
+    LabeledLineLabel,
+    LabeledLineRule,
+)
 
 __all__ = [
     # Host domain
@@ -34,6 +41,12 @@ __all__ = [
     "HostIpv4",
     "HostIpv6",
     "HostLogConfig",
+    # Labels domain
+    "AttackPhase",
+    "AttackLabel",
+    "LabeledLine",
+    "LabeledLineLabel",
+    "LabeledLineRule",
     # Audit domain
     "AuditEvent",
     "AuditMessage",

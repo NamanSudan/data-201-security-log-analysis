@@ -11,7 +11,7 @@ Reference: `docs/schema/data_model_3nf.md` for the target entity catalog and UML
 **Iteration 2 (in progress):** 3NF transformation. Documents how each staging table decomposes into normalized 3NF entities, including DDLs, ETL logic, and verification queries.
 - Host domain: **complete** (see "3NF Transformation: Host Inventory" below).
 - Audit domain: pending.
-- Labels domain: pending.
+- Labels domain: design and DDL in [labels_normalization_staging_to_3nf.md](labels_normalization_staging_to_3nf.md); ETL steps and 3NF table set documented there.
 
 ---
 
@@ -489,7 +489,8 @@ CREATE TABLE stg_attack_label_line_raw (
     source_log      VARCHAR(50) NOT NULL,
     line_number     INTEGER NOT NULL,
     labels_json     TEXT NOT NULL,
-    rules_json      TEXT NOT NULL
+    rules_json      TEXT NOT NULL,
+    UNIQUE (source_host, source_log, line_number)
 );
 ```
 
@@ -963,7 +964,9 @@ Key decisions pending:
 
 ---
 
-## 3NF Transformation: Attack Labels (Pending)
+## 3NF Transformation: Attack Labels
+
+**Full design, DDL, and ETL steps:** See [labels_normalization_staging_to_3nf.md](labels_normalization_staging_to_3nf.md).
 
 From `stg_attack_label_line_raw`:
 
