@@ -104,7 +104,7 @@ class AuditPamEvent(Base):
 class AuditServiceEvent(Base):
     """Subtype for SERVICE_START, SERVICE_STOP.
 
-    Primary msg-derived attribute: unit (service name) – join audit_message on event_id.
+    Primary msg-derived attribute: unit (service name) - join audit_message on event_id.
     3NF: single-column key (event_id); no other attributes.
     """
 
@@ -118,7 +118,10 @@ class AuditServiceEvent(Base):
 class AuditUserLoginEvent(Base):
     """Subtype for USER_LOGIN.
 
-    Primary msg-derived attribute: tty (terminal, e.g. ssh) – join audit_message on event_id.
+    Primary msg-derived attributes: terminal, id, exe, hostname, addr
+    - join audit_message on event_id.
+    Note: USER_LOGIN's msg field is 'terminal' (e.g. "/dev/pts/0"),
+    distinct from LOGIN's top-level 'tty' field.
     3NF: single-column key (event_id); no other attributes.
     """
 
@@ -132,7 +135,7 @@ class AuditUserLoginEvent(Base):
 class AuditUserCmdEvent(Base):
     """Subtype for USER_CMD.
 
-    Msg-derived attributes: cmd, cwd, id – join audit_message on event_id.
+    Msg-derived attributes: cwd, cmd, terminal, res - join audit_message on event_id.
     3NF: single-column key (event_id); no other attributes.
     """
 

@@ -104,7 +104,7 @@ def _load_audit_messages(
     """Phase 2: Insert audit_message rows for events with non-null msg.
 
     Resolves event_id via the (host_id, line_number) -> event_id map built
-    after Phase 1. Expected: ~2,540 rows.
+    after Phase 1. Expected: 2,614 rows (validated).
     """
     # Attach resolved host_id to each staging row for the lookup key
     for r in stg_rows:
@@ -227,6 +227,15 @@ def load_3nf_audit() -> None:
     print("Loading 3NF audit-domain tables from staging...")
 
     with Session(engine) as session:
+        # Fail fast if audit tables are already populated (prevents double-load)
+        existing = session.scalar(select(func.count()).select_from(AuditEvent))
+        if existing and existing > 0:
+            print(
+                f"  ABORT: audit_event already has {existing} rows. "
+                "Drop and recreate tables before re-running."
+            )
+            sys.exit(1)
+
         print("  Building host_map from final host table...")
         host_map = build_host_map(session)
 

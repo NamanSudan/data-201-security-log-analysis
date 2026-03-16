@@ -136,7 +136,9 @@ def transform_audit_events(session: Session, host_map: dict[str, int]) -> list[d
 
     Returns:
         List of dicts matching AuditEvent columns (excluding event_id).
-        Rows whose source_host is absent from host_map are skipped with a warning.
+
+    Raises:
+        ValueError: If any staging row's source_host is not in host_map.
 
     Expected: 3,048 rows.
     """
@@ -145,7 +147,11 @@ def transform_audit_events(session: Session, host_map: dict[str, int]) -> list[d
     for r in stg_rows:
         host_id = host_map.get(r.source_host)
         if host_id is None:
-            continue
+            raise ValueError(
+                f"Host lookup failed: source_host='{r.source_host}' "
+                f"(line_number={r.line_number}) not found in host table. "
+                f"Known hosts: {sorted(host_map)}"
+            )
         rows.append(
             {
                 "host_id": host_id,
@@ -185,7 +191,11 @@ def extract_audit_messages(stg_rows: list, event_id_map: dict[tuple[int, int], i
             continue
         event_id = event_id_map.get((r.host_id_resolved, r.line_number))
         if event_id is None:
-            continue
+            raise ValueError(
+                f"event_id lookup failed for msg-bearing row: "
+                f"host_id_resolved={r.host_id_resolved}, "
+                f"line_number={r.line_number}"
+            )
         rows.append({"event_id": event_id, **parse_msg(r.msg)})
     return rows
 
@@ -237,15 +247,20 @@ def extract_subtype_rows(
     for r in stg_rows:
         host_id = host_map.get(r.source_host)
         if host_id is None:
-            continue
+            raise ValueError(
+                f"Host lookup failed in subtype routing: "
+                f"source_host='{r.source_host}' (line_number={r.line_number}) "
+                f"not found in host table. Known hosts: {sorted(host_map)}"
+            )
         event_id = event_id_map.get((host_id, r.line_number))
         if event_id is None:
-            continue
+            raise ValueError(
+                f"event_id lookup failed in subtype routing: "
+                f"host_id={host_id}, line_number={r.line_number}"
+            )
 
-        try:
-            table = route_subtype(r.type)
-        except ValueError:
-            continue
+        # route_subtype raises ValueError for unknown types (total specialization)
+        table = route_subtype(r.type)
 
         row: dict = {"event_id": event_id}
 
