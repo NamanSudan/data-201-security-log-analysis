@@ -1,22 +1,22 @@
 """create label 3nf tables
 
 Revision ID: b4258b656aa5
-Revises: 358010f5f4cc
+Revises: d9e63582e3e2
 Create Date: 2026-03-15 20:32:18.105433
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b4258b656aa5"
-down_revision: Union[str, None] = "358010f5f4cc"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "d9e63582e3e2"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -71,11 +71,13 @@ def upgrade() -> None:
         sa.Column("label_id", sa.Integer(), nullable=False),
         sa.Column("rule_name", sa.String(length=120), nullable=False),
         sa.ForeignKeyConstraint(
-            ["label_id"],
-            ["attack_label.label_id"],
+            ["labeled_line_id"],
+            ["labeled_line.labeled_line_id"],
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["labeled_line_id"], ["labeled_line.labeled_line_id"], ondelete="CASCADE"
+            ["labeled_line_id", "label_id"],
+            ["labeled_line_label.labeled_line_id", "labeled_line_label.label_id"],
         ),
         sa.PrimaryKeyConstraint("labeled_line_id", "label_id", "rule_name"),
     )
