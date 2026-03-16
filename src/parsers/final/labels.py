@@ -108,7 +108,7 @@ def explode_labeled_line_labels(
         key = (row.source_host, row.source_log, row.line_number)
         labeled_line_id = provenance_to_labeled_line_id.get(key)
         if labeled_line_id is None:
-            continue
+            raise ValueError(f"No labeled_line_id for provenance {key!r}")
         for label_name in json.loads(row.labels_json):
             label_id = label_name_to_id.get(label_name)
             if label_id is None:
@@ -138,7 +138,7 @@ def explode_labeled_line_rules(
         key = (row.source_host, row.source_log, row.line_number)
         labeled_line_id = provenance_to_labeled_line_id.get(key)
         if labeled_line_id is None:
-            continue
+            raise ValueError(f"No labeled_line_id for provenance {key!r}")
         rules = json.loads(row.rules_json)
         for label_name, rule_names in rules.items():
             label_id = label_name_to_id.get(label_name)

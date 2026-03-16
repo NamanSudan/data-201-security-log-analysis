@@ -26,7 +26,6 @@ from src.models.final.labels import (
     LabeledLineRule,
 )
 from src.parsers.final.labels import (
-    expected_labeled_line_rule_count,
     explode_labeled_line_labels,
     explode_labeled_line_rules,
     get_attack_label_seed,
@@ -34,13 +33,13 @@ from src.parsers.final.labels import (
     transform_labeled_lines,
 )
 
-# Expected row counts (from docs/schema/labels_normalization_staging_to_3nf.md)
+# Expected row counts (from docs/schema/labels_normalization_staging_to_3nf.md §7)
 EXPECTED_COUNTS = {
     "attack_phase": 7,
     "attack_label": 22,
     "labeled_line": 61_862,
     "labeled_line_label": 184_517,
-    # labeled_line_rule: set at runtime from expected_labeled_line_rule_count(session)
+    "labeled_line_rule": 184_651,
 }
 
 
@@ -104,21 +103,33 @@ def _load_labeled_line(
     }
 
 
-def _load_labeled_line_junctions(
+def _load_labeled_line_label(
     session: Session,
     provenance_to_id: dict[tuple[str, str, int], int],
     label_name_to_id: dict[str, int],
 ) -> None:
-    """Phase 4: Load labeled_line_label and labeled_line_rule (FK -> labeled_line, attack_label)."""
+    """Phase 4: Load labeled_line_label (FK -> labeled_line, attack_label)."""
     for row in explode_labeled_line_labels(session, provenance_to_id, label_name_to_id):
         session.add(LabeledLineLabel(**row))
+    session.flush()
+
+
+def _load_labeled_line_rule(
+    session: Session,
+    provenance_to_id: dict[tuple[str, str, int], int],
+    label_name_to_id: dict[str, int],
+) -> None:
+    """Phase 5: Load labeled_line_rule (composite FK -> labeled_line_label).
+
+    Must run after Phase 4 flush so labeled_line_label rows exist for the composite FK.
+    """
     for row in explode_labeled_line_rules(session, provenance_to_id, label_name_to_id):
         session.add(LabeledLineRule(**row))
     session.flush()
 
 
-def verify_counts(session: Session, expected_labeled_line_rule: int | None = None) -> bool:
-    """Verify row counts match expected values. Returns True if all pass."""
+def verify_counts(session: Session) -> bool:
+    """Verify row counts match expected values from EXPECTED_COUNTS. Returns True if all pass."""
     tables = {
         "attack_phase": AttackPhase,
         "attack_label": AttackLabel,
@@ -130,12 +141,7 @@ def verify_counts(session: Session, expected_labeled_line_rule: int | None = Non
     all_ok = True
     for table_name, model in tables.items():
         actual = session.scalar(select(func.count()).select_from(model))
-        expected = EXPECTED_COUNTS.get(table_name)
-        if table_name == "labeled_line_rule" and expected_labeled_line_rule is not None:
-            expected = expected_labeled_line_rule
-        if expected is None:
-            print(f"  {table_name}: {actual} rows (no expected set)")
-            continue
+        expected = EXPECTED_COUNTS[table_name]
         status = "OK" if actual == expected else "MISMATCH"
         if actual != expected:
             all_ok = False
@@ -151,9 +157,6 @@ def load_3nf_labels() -> None:
     print("Loading 3NF labels-domain tables from staging...")
 
     with Session(engine) as session:
-        # Compute expected labeled_line_rule count from staging (for verify_counts)
-        expected_labeled_line_rule = expected_labeled_line_rule_count(session)
-
         print("  Phase 1: attack_phase...")
         phase_name_to_id = _load_attack_phase(session)
 
@@ -163,14 +166,17 @@ def load_3nf_labels() -> None:
         print("  Phase 3: labeled_line...")
         provenance_to_id = _load_labeled_line(session)
 
-        print("  Phase 4: labeled_line_label, labeled_line_rule...")
-        _load_labeled_line_junctions(session, provenance_to_id, label_name_to_id)
+        print("  Phase 4: labeled_line_label...")
+        _load_labeled_line_label(session, provenance_to_id, label_name_to_id)
+
+        print("  Phase 5: labeled_line_rule...")
+        _load_labeled_line_rule(session, provenance_to_id, label_name_to_id)
 
         session.commit()
         print("\nAll 3NF labels-domain tables committed.")
 
         print("\nRow count verification:")
-        counts_ok = verify_counts(session, expected_labeled_line_rule=expected_labeled_line_rule)
+        counts_ok = verify_counts(session)
 
     if counts_ok:
         print("\nAll verifications passed. 3NF labels-domain load complete.")
