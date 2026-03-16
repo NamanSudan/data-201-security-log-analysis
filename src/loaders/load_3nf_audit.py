@@ -40,42 +40,43 @@ from src.parsers.final.audit import (
 
 # Expected row counts for verification (from audit_3nf_normalization_plan.md §6)
 EXPECTED_COUNTS = {
-    "audit_event":            3048,
-    "audit_message":          2540,   # approximate; events with non-null msg
-    "audit_pam_event":        1968,   # approximate; validate from staging
-    "audit_service_event":     555,
-    "audit_user_login_event":    3,
-    "audit_user_cmd_event":      1,
-    "audit_login_event":       410,
-    "audit_syscall_event":       8,
-    "audit_avc_event":           8,
-    "audit_proctitle_event":     8,
+    "audit_event": 3048,
+    "audit_message": 2540,  # approximate; events with non-null msg
+    "audit_pam_event": 1968,  # approximate; validate from staging
+    "audit_service_event": 555,
+    "audit_user_login_event": 3,
+    "audit_user_cmd_event": 1,
+    "audit_login_event": 410,
+    "audit_syscall_event": 8,
+    "audit_avc_event": 8,
+    "audit_proctitle_event": 8,
 }
 
 _SUBTYPE_MODEL_MAP = {
-    "audit_pam_event":        AuditPamEvent,
-    "audit_service_event":    AuditServiceEvent,
+    "audit_pam_event": AuditPamEvent,
+    "audit_service_event": AuditServiceEvent,
     "audit_user_login_event": AuditUserLoginEvent,
-    "audit_user_cmd_event":   AuditUserCmdEvent,
-    "audit_login_event":      AuditLoginEvent,
-    "audit_syscall_event":    AuditSyscallEvent,
-    "audit_avc_event":        AuditAvcEvent,
-    "audit_proctitle_event":  AuditProctitleEvent,
+    "audit_user_cmd_event": AuditUserCmdEvent,
+    "audit_login_event": AuditLoginEvent,
+    "audit_syscall_event": AuditSyscallEvent,
+    "audit_avc_event": AuditAvcEvent,
+    "audit_proctitle_event": AuditProctitleEvent,
 }
 
 
 def get_database_url() -> str:
     """Get database URL from environment (mirrors alembic/env.py logic)."""
     import os
+
     database_url = os.getenv("DATABASE_URL")
     if database_url:
         return database_url
 
-    user     = os.getenv("DB_USER",     "security_logs_user")
+    user = os.getenv("DB_USER", "security_logs_user")
     password = os.getenv("DB_PASSWORD", "dev_password_change_me")
-    host     = os.getenv("DB_HOST",     "localhost")
-    port     = os.getenv("DB_PORT",     "5432")
-    db_name  = os.getenv("DB_NAME",     "security_logs")
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "security_logs")
     return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
 
@@ -140,7 +141,7 @@ def verify_counts(session: Session) -> bool:
 
     all_ok = True
     for table_name, model in all_models.items():
-        actual   = session.scalar(select(func.count()).select_from(model))
+        actual = session.scalar(select(func.count()).select_from(model))
         expected = EXPECTED_COUNTS[table_name]
         # audit_message and audit_pam_event are approximate; flag large deviations only
         approximate = table_name in ("audit_message", "audit_pam_event")
@@ -162,9 +163,7 @@ def verify_integrity(session: Session) -> bool:
     all_ok = True
 
     # Every audit_event must have exactly one subtype row
-    union_parts = " UNION ALL ".join(
-        f"SELECT event_id FROM {t}" for t in _SUBTYPE_MODEL_MAP
-    )
+    union_parts = " UNION ALL ".join(f"SELECT event_id FROM {t}" for t in _SUBTYPE_MODEL_MAP)
     orphaned = session.execute(
         text(f"""
             SELECT ae.event_id

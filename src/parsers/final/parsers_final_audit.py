@@ -6,13 +6,12 @@ responsible for session management and insertion order.
 """
 
 import re
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.models.staging.audit import StgAuditLineRaw
 from src.models.final.host import Host
+from src.models.staging.audit import StgAuditLineRaw
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -21,34 +20,44 @@ from src.models.final.host import Host
 #: Maps each audit event type to its 3NF subtype table name.
 SUBTYPE_MAP: dict[str, str] = {
     # msg-bearing subtypes
-    "CRED_ACQ":      "audit_pam_event",
-    "USER_ACCT":     "audit_pam_event",
-    "USER_START":    "audit_pam_event",
-    "USER_END":      "audit_pam_event",
-    "CRED_DISP":     "audit_pam_event",
-    "USER_AUTH":     "audit_pam_event",
-    "CRED_REFR":     "audit_pam_event",
+    "CRED_ACQ": "audit_pam_event",
+    "USER_ACCT": "audit_pam_event",
+    "USER_START": "audit_pam_event",
+    "USER_END": "audit_pam_event",
+    "CRED_DISP": "audit_pam_event",
+    "USER_AUTH": "audit_pam_event",
+    "CRED_REFR": "audit_pam_event",
     "SERVICE_START": "audit_service_event",
-    "SERVICE_STOP":  "audit_service_event",
-    "USER_LOGIN":    "audit_user_login_event",
-    "USER_CMD":      "audit_user_cmd_event",
+    "SERVICE_STOP": "audit_service_event",
+    "USER_LOGIN": "audit_user_login_event",
+    "USER_CMD": "audit_user_cmd_event",
     # outer-field subtypes
-    "LOGIN":         "audit_login_event",
-    "SYSCALL":       "audit_syscall_event",
-    "AVC":           "audit_avc_event",
-    "PROCTITLE":     "audit_proctitle_event",
+    "LOGIN": "audit_login_event",
+    "SYSCALL": "audit_syscall_event",
+    "AVC": "audit_avc_event",
+    "PROCTITLE": "audit_proctitle_event",
 }
 
 #: The 12 atomic attributes unpacked from the msg blob into audit_message.
 _MSG_ATTRIBUTES = (
-    "op", "acct", "exe", "hostname", "addr",
-    "terminal", "res", "unit", "comm", "id", "cwd", "cmd",
+    "op",
+    "acct",
+    "exe",
+    "hostname",
+    "addr",
+    "terminal",
+    "res",
+    "unit",
+    "comm",
+    "id",
+    "cwd",
+    "cmd",
 )
 
 # Outer-field columns sourced from staging for each outer-field subtype.
-_LOGIN_FIELDS    = ("old_auid", "old_ses", "tty", "res")
-_SYSCALL_FIELDS  = ("arch", "syscall", "success", "exit", "exe", "comm", "key")
-_AVC_FIELDS      = ("apparmor", "operation", "profile", "name", "info", "comm")
+_LOGIN_FIELDS = ("old_auid", "old_ses", "tty", "res")
+_SYSCALL_FIELDS = ("arch", "syscall", "success", "exit", "exe", "comm", "key")
+_AVC_FIELDS = ("apparmor", "operation", "profile", "name", "info", "comm")
 _PROCTITLE_FIELDS = ("proctitle",)
 
 # key=value regex: handles key='val', key="val", key=bare
@@ -58,6 +67,7 @@ _KV_RE = re.compile(r"""(\w+)=(?:'([^']*)'|"([^"]*)"|(\S+))""")
 # ---------------------------------------------------------------------------
 # Host map
 # ---------------------------------------------------------------------------
+
 
 def build_host_map(session: Session) -> dict[str, int]:
     """Return {host_key: host_id} from the already-loaded final host table.
@@ -73,7 +83,8 @@ def build_host_map(session: Session) -> dict[str, int]:
 # msg unpacking (1NF resolution)
 # ---------------------------------------------------------------------------
 
-def parse_msg(msg: Optional[str]) -> dict[str, Optional[str | int]]:
+
+def parse_msg(msg: str | None) -> dict[str, str | int | None]:
     """Unpack one raw msg blob into the 12 atomic audit_message attributes.
 
     The msg field stores key=value pairs in a single cell, e.g.:
@@ -89,16 +100,14 @@ def parse_msg(msg: Optional[str]) -> dict[str, Optional[str | int]]:
     Returns:
         Dict with all 12 _MSG_ATTRIBUTES keys; missing values are None.
     """
-    result: dict[str, Optional[str | int]] = {attr: None for attr in _MSG_ATTRIBUTES}
+    result: dict[str, str | int | None] = dict.fromkeys(_MSG_ATTRIBUTES)
 
     if not msg:
         return result
 
     for match in _KV_RE.finditer(msg):
         key = match.group(1).lower()
-        value: Optional[str] = next(
-            (g for g in match.groups()[1:] if g is not None), None
-        )
+        value: str | None = next((g for g in match.groups()[1:] if g is not None), None)
         if value in ("?", ""):
             value = None
         if key in result:
@@ -117,9 +126,8 @@ def parse_msg(msg: Optional[str]) -> dict[str, Optional[str | int]]:
 # Row builders
 # ---------------------------------------------------------------------------
 
-def transform_audit_events(
-    session: Session, host_map: dict[str, int]
-) -> list[dict]:
+
+def transform_audit_events(session: Session, host_map: dict[str, int]) -> list[dict]:
     """Transform stg_audit_line_raw rows into audit_event rows.
 
     Args:
@@ -138,25 +146,25 @@ def transform_audit_events(
         host_id = host_map.get(r.source_host)
         if host_id is None:
             continue
-        rows.append({
-            "host_id":     host_id,
-            "line_number": r.line_number,
-            "raw_line":    r.raw_line,
-            "type":        r.type,
-            "epoch":       r.epoch,
-            "serial":      r.serial,
-            "timestamp":   r.timestamp,
-            "pid":         r.pid,
-            "uid":         r.uid,
-            "auid":        r.auid,
-            "ses":         r.ses,
-        })
+        rows.append(
+            {
+                "host_id": host_id,
+                "line_number": r.line_number,
+                "raw_line": r.raw_line,
+                "type": r.type,
+                "epoch": r.epoch,
+                "serial": r.serial,
+                "timestamp": r.timestamp,
+                "pid": r.pid,
+                "uid": r.uid,
+                "auid": r.auid,
+                "ses": r.ses,
+            }
+        )
     return rows
 
 
-def extract_audit_messages(
-    stg_rows: list, event_id_map: dict[tuple[int, int], int]
-) -> list[dict]:
+def extract_audit_messages(stg_rows: list, event_id_map: dict[tuple[int, int], int]) -> list[dict]:
     """Extract audit_message rows from staging rows that have a non-null msg.
 
     Resolves event_id via (host_id, line_number) -> event_id lookup built
@@ -197,8 +205,7 @@ def route_subtype(event_type: str) -> str:
     table = SUBTYPE_MAP.get(event_type.upper())
     if table is None:
         raise ValueError(
-            f"Unknown audit event type '{event_type}'. "
-            f"Known types: {sorted(SUBTYPE_MAP)}"
+            f"Unknown audit event type '{event_type}'. Known types: {sorted(SUBTYPE_MAP)}"
         )
     return table
 
