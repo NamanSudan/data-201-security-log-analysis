@@ -8,6 +8,11 @@ database URL.
 import os
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
+
+# Load .env so DB_* and DATABASE_URL are set when running: alembic upgrade head
+load_dotenv()
+
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
