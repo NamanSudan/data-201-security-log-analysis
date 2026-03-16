@@ -62,7 +62,7 @@ Candidate key `(source_host, source_log, line_number)` is enforced via UNIQUE in
 |-------|-----------|----|-----|----------------|---------------|
 | **labeled_line** | One per labeled line (61,862) | `labeled_line_id` | None | `source_host`, `source_log`, `line_number` | Provenance only; dropped JSON columns. |
 | **labeled_line_label** | One per (line, label) (~184,517) | (labeled_line_id, label_id) | → labeled_line, → attack_label | `labeled_line_id`, `label_id` | From `labels_json`: one row per label. |
-| **labeled_line_rule** | One per (line, label, rule) | (labeled_line_id, label_id, rule_name) | → labeled_line, → attack_label | `labeled_line_id`, `label_id`, `rule_name` | From `rules_json`: one row per rule per label. |
+| **labeled_line_rule** | One per (line, label, rule) | (labeled_line_id, label_id, rule_name) | → labeled_line_label (composite), → labeled_line (cascade) | `labeled_line_id`, `label_id`, `rule_name` | From `rules_json`: one row per rule per label. |
 
 (At 1NF we can use `label_name` in the junctions; at 3NF we use `label_id` after introducing `attack_label`.)
 
@@ -78,7 +78,7 @@ No schema changes. Single-column PK on `labeled_line`; junction tables are all-k
 | **attack_label** | One per label (22) | `label_id` | → attack_phase | `label_name`, `phase_id` | New; FD label_name → attack_phase. |
 | **labeled_line** | One per labeled line (61,862) | `labeled_line_id` | None | `source_host`, `source_log`, `line_number` | Unchanged from 1NF. |
 | **labeled_line_label** | One per (line, label) (~184,517) | (labeled_line_id, label_id) | → labeled_line, → attack_label | `labeled_line_id`, `label_id` | References `label_id` instead of label name. |
-| **labeled_line_rule** | One per (line, label, rule) | (labeled_line_id, label_id, rule_name) | → labeled_line, → attack_label | `labeled_line_id`, `label_id`, `rule_name` | References `label_id`. |
+| **labeled_line_rule** | One per (line, label, rule) (~184,651) | (labeled_line_id, label_id, rule_name) | → labeled_line_label (composite), → labeled_line (cascade) | `labeled_line_id`, `label_id`, `rule_name` | References `label_id`; composite FK enforces rule must belong to existing (line, label) assignment. |
 
 ---
 
@@ -108,7 +108,7 @@ No separate metadata table for log-config `add_field` in the labels domain; that
 | attack_label | 22 | Fixed from taxonomy. |
 | labeled_line | 61,862 | One per staging row. |
 | labeled_line_label | 184,517 | Sum of label-array lengths across all staging rows (findings: 184,517 occurrences). |
-| labeled_line_rule | (derive) | Sum over all staging rows of (number of rule names in `rules_json`). Not reported in findings; loader can compute from staging before load or record after first successful run for regression. |
+| labeled_line_rule | 184,651 | Sum of all rule-name entries in `rules_json` across all staging rows (validated from DB). Exceeds `labeled_line_label` (184,517) by 134 because some (line, label) pairs have multiple rules. |
 
 ---
 
@@ -120,7 +120,7 @@ No separate metadata table for log-config `add_field` in the labels domain; that
 | **attack_label** | Single place for 22 label names and their phase (FD: label_name → attack_phase). |
 | **labeled_line** | Annotation grain: one row per (source_host, source_log, line_number) for joins to audit/host. |
 | **labeled_line_label** | Replaces multi-valued `labels_json` with atomic (line, label) rows. |
-| **labeled_line_rule** | Replaces nested `rules_json` with atomic (line, label, rule) rows; preserves “rules keys = labels” via FKs. |
+| **labeled_line_rule** | Replaces nested `rules_json` with atomic (line, label, rule) rows; composite FK to `labeled_line_label` enforces that rules belong to existing label assignments. |
 
 ---
 
@@ -130,7 +130,7 @@ No separate metadata table for log-config `add_field` in the labels domain; that
 
 - **attack_phase** ← **attack_label:** Each `attack_label` row has `phase_id` FK to `attack_phase`. One phase has many labels; each label has exactly one phase.
 - **labeled_line** ← **labeled_line_label:** Each junction row has `labeled_line_id` FK to `labeled_line`. One labeled line has 2–4 label rows (and vice versa: many-to-many).
-- **labeled_line** ← **labeled_line_rule:** Each junction row has `labeled_line_id` FK to `labeled_line` and `label_id` FK to `attack_label`. One labeled line has many rule rows (one per label per rule name).
+- **labeled_line_label** ← **labeled_line_rule:** Each rule row has a composite FK `(labeled_line_id, label_id)` to `labeled_line_label`, ensuring a rule can only exist for an existing label assignment. Also has `labeled_line_id` FK (cascade) to `labeled_line`. One label assignment has one or more rule rows.
 - **attack_label** ← **labeled_line_label**, **labeled_line_rule:** Junctions reference `label_id`; each label can appear on many lines.
 
 No FKs from `labeled_line` to other domains; joins to host and audit use provenance columns.
@@ -172,8 +172,11 @@ host (host_id, host_key, ...)
   |
 labeled_line (labeled_line_id, source_host, source_log, line_number)
   |
-  +-- labeled_line_label --> attack_label --> attack_phase
-  +-- labeled_line_rule  --> attack_label
+  +-- labeled_line_label (labeled_line_id, label_id) --> attack_label --> attack_phase
+  |         ^
+  |         | composite FK (labeled_line_id, label_id)
+  |         |
+  +-- labeled_line_rule  (labeled_line_id, label_id, rule_name)
 
 audit_event (event_id, host_id, line_number, ...)
   |
@@ -249,12 +252,16 @@ CREATE TABLE labeled_line_label (
 -- labeled_line_rule: Junction (line, label, rule_name); one row per rule per label per line
 -- 1NF resolution of rules_json. rule_name kept as string; optional rule table later.
 -- VARCHAR(120) is a safe upper bound for current rule names; adjust if longer names appear.
+-- Composite FK to labeled_line_label ensures a rule can only exist for
+-- a (line, label) pair that is already in the label assignment junction.
 
 CREATE TABLE labeled_line_rule (
-    labeled_line_id INT NOT NULL REFERENCES labeled_line(labeled_line_id) ON DELETE CASCADE,
-    label_id        INT NOT NULL REFERENCES attack_label(label_id),
+    labeled_line_id INT NOT NULL,
+    label_id        INT NOT NULL,
     rule_name       VARCHAR(120) NOT NULL,
-    PRIMARY KEY (labeled_line_id, label_id, rule_name)
+    PRIMARY KEY (labeled_line_id, label_id, rule_name),
+    FOREIGN KEY (labeled_line_id) REFERENCES labeled_line(labeled_line_id) ON DELETE CASCADE,
+    FOREIGN KEY (labeled_line_id, label_id) REFERENCES labeled_line_label(labeled_line_id, label_id)
 );
 ```
 
@@ -294,13 +301,13 @@ Alternatively, use the title-case names from `naman_labels_findings.md` §4 (Exf
 
 ### Load order (respect FKs)
 
-1. **attack_phase** (no FKs)  
-2. **attack_label** (FK → attack_phase)  
-3. **labeled_line** (no FKs to other 3NF label tables)  
-4. **labeled_line_label** (FK → labeled_line, attack_label)  
-5. **labeled_line_rule** (FK → labeled_line, attack_label)  
+1. **attack_phase** (no FKs)
+2. **attack_label** (FK → attack_phase)
+3. **labeled_line** (no FKs to other 3NF label tables)
+4. **labeled_line_label** (FK → labeled_line, attack_label)
+5. **labeled_line_rule** (composite FK → labeled_line_label; FK → labeled_line)
 
-Steps 4 and 5 can run in any order after 1–3.
+Step 5 must run after Step 4 because `labeled_line_rule` has a composite FK to `labeled_line_label`.
 
 ---
 
@@ -375,6 +382,19 @@ Steps 4 and 5 can run in any order after 1–3.
 | host_id / audit_event_id on labeled_line | Omit initially; join via (source_host, source_log, line_number) to host and audit. |
 | Taxonomy source | Seed `attack_phase` and `attack_label` from project taxonomy (e.g. naman_labels_findings.md §4). |
 | Unknown labels | Fail-fast: all label strings must exist in `attack_label`; or document an "unknown" phase/label. |
+| Rule-to-label integrity | `labeled_line_rule` has composite FK `(labeled_line_id, label_id)` to `labeled_line_label`, enforcing that a rule can only exist for an existing label assignment. Step 5 must follow Step 4 in ETL. |
+
+### EER divergences (physical schema vs. `combined_eer_3nf_v1.drawio.xml`)
+
+This document is the **implementation source of truth** for the labels domain. The EER diagram (`combined_eer_3nf_v1.drawio.xml`) is the conceptual-level reference. Three intentional divergences exist between the physical schema defined here and the current EER:
+
+1. **Detection Rule entity deferred.** The EER models "Detection Rule" as a separate entity with `rule_name` as its key attribute, connected M:N to "Label Assignment" via a "triggered by" relationship. The physical schema keeps `rule_name` as a `VARCHAR(120)` string directly in `labeled_line_rule` with no `detection_rule` lookup table. This avoids an extra table and join for a 36-value set with no additional attributes. A `rule` table can be added later if rule metadata or strict referential integrity on rule names is needed.
+
+2. **`labeled_line_label` is an additional junction not in the EER.** The EER models a single "Label Assignment" associative entity at grain (annotation, label, rule). The physical schema splits this into two tables: `labeled_line_label` at grain (line, label) and `labeled_line_rule` at grain (line, label, rule). The additional `labeled_line_label` table simplifies queries that need only label assignments without rules (the common case for analytical queries) and provides a composite-FK parent for `labeled_line_rule`.
+
+3. **`attack_phase` extracted to separate table.** The EER models `attack_phase` as a regular attribute of "Attack Label." The physical schema creates a separate `attack_phase` table to resolve the 3NF transitive dependency `label_name -> attack_phase`. This is the expected conceptual-to-physical difference.
+
+EER reconciliation (updating the diagram to match the physical schema) is deferred to a separate task.
 
 ---
 
@@ -406,9 +426,10 @@ Parser produces `source_host`, `source_log`, `line_number` (from `obj["line"]`),
 
 ## 15. Unresolved / deferred and checklist
 
-- **rule table:** Optional; add if rule metadata or strict referential integrity is required.
+- **rule table:** Optional; add if rule metadata or strict referential integrity on rule names is required. See EER divergences in §12.
 - **Explicit host_id / audit_event_id on labeled_line:** Deferred; join via provenance (see §9).
 - **Exact phase/label seed content:** Taken from project taxonomy (naman_labels_findings §4); list exact 7 `phase_name` values in ETL or seed script.
+- **EER reconciliation:** Update `combined_eer_3nf_v1.drawio.xml` to reflect the physical schema divergences documented in §12.
 
 **Checklist for implementation:**
 
@@ -418,6 +439,9 @@ Parser produces `source_host`, `source_log`, `line_number` (from `obj["line"]`),
 - [x] Document exact 7 `phase_name` seed values / convention (§11).
 - [ ] (Optional) Document or implement `ON CONFLICT DO NOTHING` for junction inserts (§11 Steps 4–5).
 - [x] Note on `rule_name` max length: VARCHAR(120) as safe upper bound (§10 DDL).
+- [x] Add composite FK from `labeled_line_rule(labeled_line_id, label_id)` to `labeled_line_label` (§10 DDL, §12).
+- [x] Document EER divergences: Detection Rule deferred, `labeled_line_label` added, `attack_phase` extracted (§12).
+- [x] Add exact `labeled_line_rule` expected count: 184,651 (§7).
 
 ---
 
