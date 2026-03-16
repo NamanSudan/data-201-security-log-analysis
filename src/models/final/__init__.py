@@ -12,6 +12,13 @@ from src.models.final.host import (
     HostLogConfig,
     OsRelease,
 )
+from src.models.final.labels import (
+    AttackLabel,
+    AttackPhase,
+    LabeledLine,
+    LabeledLineLabel,
+    LabeledLineRule,
+)
 
 __all__ = [
     "OsRelease",
@@ -21,4 +28,9 @@ __all__ = [
     "HostIpv4",
     "HostIpv6",
     "HostLogConfig",
+    "AttackPhase",
+    "AttackLabel",
+    "LabeledLine",
+    "LabeledLineLabel",
+    "LabeledLineRule",
 ]

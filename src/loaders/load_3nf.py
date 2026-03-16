@@ -1,7 +1,7 @@
 """3NF data loader: staging -> final normalized tables.
 
 Reads from staging tables (already loaded by load_staging.py) and
-populates the 3NF host-domain tables in FK-dependency order.
+populates the 3NF host-domain and labels-domain tables in FK-dependency order.
 
 Usage:
     python -m src.loaders.load_3nf
@@ -27,6 +27,13 @@ from src.models.final.host import (
     HostLogConfig,
     OsRelease,
 )
+from src.models.final.labels import (
+    AttackLabel,
+    AttackPhase,
+    LabeledLine,
+    LabeledLineLabel,
+    LabeledLineRule,
+)
 from src.parsers.final.hosts import (
     explode_host_fqdns,
     explode_host_groups,
@@ -36,8 +43,16 @@ from src.parsers.final.hosts import (
     transform_host_log_configs,
     transform_hosts,
 )
+from src.parsers.final.labels import (
+    expected_labeled_line_rule_count,
+    explode_labeled_line_labels,
+    explode_labeled_line_rules,
+    get_attack_label_seed,
+    get_attack_phase_seed,
+    transform_labeled_lines,
+)
 
-# Expected row counts for verification (from docs/schema/data_model_3nf.md)
+# Expected row counts for verification (host from data_model_3nf.md; labels from labels_normalization_staging_to_3nf.md)
 EXPECTED_COUNTS = {
     "os_release": 2,
     "host": 22,
@@ -46,6 +61,11 @@ EXPECTED_COUNTS = {
     "host_ipv4": 24,
     "host_ipv6": 24,
     "host_log_config": 66,
+    "attack_phase": 7,
+    "attack_label": 22,
+    "labeled_line": 61_862,
+    "labeled_line_label": 184_517,
+    # labeled_line_rule: set at runtime from expected_labeled_line_rule_count(session)
 }
 
 
@@ -112,7 +132,66 @@ def _load_host_children(session: Session, host_key_to_id: dict[str, int]) -> Non
     session.flush()
 
 
-def verify_counts(session: Session) -> bool:
+def _load_attack_phase(session: Session) -> dict[str, int]:
+    """Phase 4: Load attack_phase lookup table (seed from taxonomy).
+
+    Returns: {phase_name: phase_id} mapping.
+    """
+    rows = get_attack_phase_seed()
+    objects = [AttackPhase(**row) for row in rows]
+    session.add_all(objects)
+    session.flush()
+    return {obj.phase_name: obj.phase_id for obj in objects}
+
+
+def _load_attack_label(
+    session: Session, phase_name_to_id: dict[str, int]
+) -> dict[str, int]:
+    """Phase 5: Load attack_label lookup table (seed from taxonomy).
+
+    Resolves phase_name -> phase_id from seed rows. Returns: {label_name: label_id} mapping.
+    """
+    rows = get_attack_label_seed()
+    objects = []
+    for row in rows:
+        phase_id = phase_name_to_id[row["phase_name"]]
+        objects.append(AttackLabel(label_name=row["label_name"], phase_id=phase_id))
+    session.add_all(objects)
+    session.flush()
+    return {obj.label_name: obj.label_id for obj in objects}
+
+
+def _load_labeled_line(
+    session: Session,
+) -> dict[tuple[str, str, int], int]:
+    """Phase 6: Load labeled_line from staging.
+
+    Returns: {(source_host, source_log, line_number): labeled_line_id} mapping.
+    """
+    rows = transform_labeled_lines(session)
+    objects = [LabeledLine(**row) for row in rows]
+    session.add_all(objects)
+    session.flush()
+    return {
+        (obj.source_host, obj.source_log, obj.line_number): obj.labeled_line_id
+        for obj in objects
+    }
+
+
+def _load_labeled_line_junctions(
+    session: Session,
+    provenance_to_id: dict[tuple[str, str, int], int],
+    label_name_to_id: dict[str, int],
+) -> None:
+    """Phase 7: Load labeled_line_label and labeled_line_rule (FK -> labeled_line, attack_label)."""
+    for row in explode_labeled_line_labels(session, provenance_to_id, label_name_to_id):
+        session.add(LabeledLineLabel(**row))
+    for row in explode_labeled_line_rules(session, provenance_to_id, label_name_to_id):
+        session.add(LabeledLineRule(**row))
+    session.flush()
+
+
+def verify_counts(session: Session, expected_labeled_line_rule: int | None = None) -> bool:
     """Verify row counts match expected values. Returns True if all pass."""
     tables = {
         "os_release": OsRelease,
@@ -122,12 +201,22 @@ def verify_counts(session: Session) -> bool:
         "host_ipv4": HostIpv4,
         "host_ipv6": HostIpv6,
         "host_log_config": HostLogConfig,
+        "attack_phase": AttackPhase,
+        "attack_label": AttackLabel,
+        "labeled_line": LabeledLine,
+        "labeled_line_label": LabeledLineLabel,
+        "labeled_line_rule": LabeledLineRule,
     }
 
     all_ok = True
     for table_name, model in tables.items():
         actual = session.scalar(select(func.count()).select_from(model))
-        expected = EXPECTED_COUNTS[table_name]
+        expected = EXPECTED_COUNTS.get(table_name)
+        if table_name == "labeled_line_rule" and expected_labeled_line_rule is not None:
+            expected = expected_labeled_line_rule
+        if expected is None:
+            print(f"  {table_name}: {actual} rows (no expected set)")
+            continue
         status = "OK" if actual == expected else "MISMATCH"
         if actual != expected:
             all_ok = False
@@ -196,12 +285,16 @@ def verify_integrity(session: Session) -> bool:
 
 
 def load_3nf() -> None:
-    """Main entry point: transform staging -> 3NF host-domain tables."""
+    """Main entry point: transform staging -> 3NF host-domain and labels-domain tables."""
     engine = create_engine(get_database_url())
 
-    print("Loading 3NF host-domain tables from staging...")
+    print("Loading 3NF tables from staging...")
 
     with Session(engine) as session:
+        # Compute expected labeled_line_rule count from staging (for verify_counts)
+        expected_labeled_line_rule = expected_labeled_line_rule_count(session)
+
+        # Host domain (phases 1-3)
         print("  Phase 1: os_release...")
         os_release_map = _load_os_release(session)
 
@@ -211,17 +304,30 @@ def load_3nf() -> None:
         print("  Phase 3: host_group, host_fqdn, host_ipv4, host_ipv6, host_log_config...")
         _load_host_children(session, host_key_to_id)
 
+        # Labels domain (phases 4-7)
+        print("  Phase 4: attack_phase...")
+        phase_name_to_id = _load_attack_phase(session)
+
+        print("  Phase 5: attack_label...")
+        label_name_to_id = _load_attack_label(session, phase_name_to_id)
+
+        print("  Phase 6: labeled_line...")
+        provenance_to_id = _load_labeled_line(session)
+
+        print("  Phase 7: labeled_line_label, labeled_line_rule...")
+        _load_labeled_line_junctions(session, provenance_to_id, label_name_to_id)
+
         session.commit()
-        print("\nAll 3NF host-domain tables committed.")
+        print("\nAll 3NF tables committed.")
 
         print("\nRow count verification:")
-        counts_ok = verify_counts(session)
+        counts_ok = verify_counts(session, expected_labeled_line_rule=expected_labeled_line_rule)
 
         print("\nIntegrity verification:")
         integrity_ok = verify_integrity(session)
 
     if counts_ok and integrity_ok:
-        print("\nAll verifications passed. 3NF host-domain load complete.")
+        print("\nAll verifications passed. 3NF load complete.")
     else:
         print("\nWARNING: Some verifications failed.")
         sys.exit(1)
