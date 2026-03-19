@@ -1,5 +1,4 @@
-SELECT DISTINCT
-  e.type
+SELECT DISTINCT e.type
 FROM audit_event e
 WHERE EXISTS (
   SELECT 1
