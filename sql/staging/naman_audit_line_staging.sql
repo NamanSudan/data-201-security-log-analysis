@@ -1,7 +1,7 @@
 -- stg_audit_line_raw: Shared table for audit.log lines (3,048 rows)
 -- Sources: intranet_server (2,316) + internal_share (732)
 -- msg column stores packed key-value blob as-is (1NF violation, deferred to 3NF)
--- Reference snapshot -- canonical schema is in src/models/staging/audit.py
+-- Reference snapshot - canonical schema is in src/models/staging/audit.py
 
 CREATE TABLE stg_audit_line_raw (
     row_id          SERIAL PRIMARY KEY,

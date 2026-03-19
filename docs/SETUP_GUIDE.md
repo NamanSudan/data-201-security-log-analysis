@@ -157,7 +157,7 @@ You should see three containers with `STATUS` showing `Up` and `(healthy)` for t
      - Port: `5432`
      - Maintenance database: `security_logs`
      - Username: `security_logs_user`
-     - Password: `dev_password_change_me`
+     - Password: `change_this_password`
      - Check **"Save password"**
    - Click **Save**
 
@@ -224,7 +224,7 @@ Navigate to `notebooks/` and open `01_explore_hosts.ipynb` to start exploring th
 | **Port** | `5432` |
 | **Database** | `security_logs` |
 | **Username** | `security_logs_user` |
-| **Password** | `dev_password_change_me` |
+| **Password** | `change_this_password` |
 | **pgAdmin URL** | http://localhost:5050 |
 | **pgAdmin Login** | `admin@localhost.com` / `admin` |
 

@@ -1,7 +1,7 @@
 -- stg_host_raw: One row per host machine (22 rows)
 -- Source: russellmitchell/processing/config/servers.yaml
 -- Multi-valued fields stored as JSON-array strings in TEXT (1NF deferred)
--- Reference snapshot -- canonical schema is in src/models/staging/host.py
+-- Reference snapshot - canonical schema is in src/models/staging/host.py
 
 CREATE TABLE stg_host_raw (
     host_id              SERIAL PRIMARY KEY,

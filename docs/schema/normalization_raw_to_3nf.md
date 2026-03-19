@@ -8,10 +8,10 @@ Reference: `docs/schema/data_model_3nf.md` for the target entity catalog and UML
 
 **Iteration 1 (complete):** Staging layer. Documents how each raw source file maps into its staging table, including exact column schemas, parsing logic, provenance handling, and loading notes.
 
-**Iteration 2 (in progress):** 3NF transformation. Documents how each staging table decomposes into normalized 3NF entities, including DDLs, ETL logic, and verification queries.
-- Host domain: **complete** (see "3NF Transformation: Host Inventory" below).
-- Audit domain: pending.
-- Labels domain: design and DDL in [labels_normalization_staging_to_3nf.md](labels_normalization_staging_to_3nf.md); ETL steps and 3NF table set documented there.
+**Iteration 2 (complete):** 3NF transformation. Documents how each staging table decomposes into normalized 3NF entities, including DDLs, ETL logic, and verification queries.
+- Host domain: complete (see "3NF Transformation: Host Inventory" below).
+- Audit domain: complete (see "3NF Transformation: Audit Events" below).
+- Labels domain: complete (see "3NF Transformation: Attack Labels" below).
 
 ---
 
@@ -945,63 +945,788 @@ HAVING COUNT(*) > 1;
 
 ---
 
-## 3NF Transformation: Audit Events (Pending)
+## 3NF Transformation: Audit Events
 
-From `stg_audit_line_raw`:
+Source staging table: `stg_audit_line_raw` (3,048 rows, 44 cols).
+Target: 10 normalized tables in the audit domain.
+Findings docs: `docs/data_exploration/notebook_findings/naman_audit_intranet_findings.md`, `naman_audit_internal_share_findings.md`.
+EER diagram: `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
+Reference: DATA201 Lecture 4 (normalization definitions).
 
-| Staging source | 3NF target(s) | Transformation |
+Implementation note: 1NF and 2NF are documented below as logical normalization stages for audit and teaching purposes. They are not separate physical schemas. The implementation creates only the final 3NF physical tables and writes ETL that transforms directly from staging to 3NF.
+
+### Row Grain Recap
+
+| Staging table | Row grain | Rows | PK | Natural key(s) |
+|---|---|---|---|---|
+| `stg_audit_line_raw` | One row per line in a source audit.log file | 3,048 | `row_id` (SERIAL) | `(source_host, source_log, line_number)` verified unique |
+
+### Normalization Issues (Audit vs. Lecture 4)
+
+| NF | Issue in staging | Lecture 4 view | Resolution |
+|---|---|---|---|
+| 1NF | `msg` holds multiple key-value pairs (op, acct, exe, hostname, addr, terminal, res, unit, comm, id, cwd, cmd) in one cell. Non-atomic value / repeating group. | Not 1NF: one cell does not hold a single value. | Unpack into atomic attributes in a separate `audit_message` table (0..1 per audit event). Each attribute is one column, one value per row. |
+| 2NF | Staging uses surrogate `row_id`; natural candidate key is `(source_host, source_log, line_number)` or `(host_id, line_number)`. Attributes like `type`, `epoch`, `pid` depend on the whole key. | With composite key, no non-key attribute may depend on only part of the key. | 3NF schema uses `(host_id, line_number)` as business key; `audit_event` has no partial dependency (all non-keys depend on event_id / whole key). Subtypes use `event_id` as sole key; no composite key, so 2NF holds. |
+| 3NF | Event `type` determines which other columns are populated (e.g. LOGIN populates old_auid, old_ses, tty, res; SYSCALL populates syscall, arch, success, tty, ...). Non-key attributes effectively depend on another non-key (type). | Transitive dependency: Key -> type -> field set. Non-key depending on non-key. | Split into subtype tables: each subtype table's non-key attributes depend only on `event_id` (the key). Type is stored once in `audit_event`; type-specific attributes live in the subtype that corresponds to that type, so there is no non-key -> non-key dependency in a single table. |
+
+Anomalies avoided: update (change msg content in one row of audit_message); insert (add event without forcing duplicate msg columns across subtypes); delete (delete an event does not leave orphaned msg attributes in a mixed table).
+
+### Logical Stage 1: 1NF Resolution
+
+The `msg` TEXT blob in staging packs 5 to 12 key-value pairs into a single cell for PAM and SERVICE events (~85% of rows). 1NF requires every column to hold a single atomic value.
+
+Resolution: Create `audit_message` as a separate table (0..1 per event) that stores each msg sub-field as its own column: op, acct, exe, hostname, addr, terminal, res, unit, comm, id, cwd, cmd.
+
+Events with non-null msg in staging: 2,614 rows. Events with null msg (LOGIN, AVC, SYSCALL, PROCTITLE): 434 rows. These do not get audit_message rows.
+
+### Logical Stage 2: 2NF Verification
+
+After 1NF, the design uses `event_id` (single-column surrogate) as PK on `audit_event` and `audit_message`. Subtypes also use `event_id` as their sole PK. No composite keys with non-key attributes exist.
+
+2NF result: no partial dependencies. This is a verification checkpoint, not a schema change.
+
+### Logical Stage 3: 3NF Resolution via Subtype Tables
+
+The event `type` column creates a transitive-like dependency: `event_id -> type -> populated field set`. Different event types populate entirely different sets of columns, meaning non-key attributes depend on another non-key (`type`).
+
+Resolution: Split into 8 subtype tables (total, disjoint specialization). Each subtype holds only the columns relevant to its event type(s), and those columns depend only on `event_id`. The `type` column remains on `audit_event` as the discriminator.
+
+Specialization constraint (total, disjoint): All 15 event types in the current data map to exactly one of the 8 subtypes, so every `audit_event` row is routed to exactly one subtype table (total). No event belongs to more than one subtype (disjoint). The implementation loader enforces this: route every row, raise an error on unrecognized types.
+
+EER divergence note: The current EER (`combined_eer_3nf_v1.drawio.xml`) annotates the audit subtype specialization as "partial, disjoint." The data validates total coverage, so this document and the implementation use "total, disjoint." EER reconciliation is deferred.
+
+### Business Key: `(host_id, line_number)`
+
+The staging candidate key is `(source_host, source_log, line_number)`. The 3NF design simplifies this to `(host_id, line_number)` because:
+
+1. `source_log` is always `'audit.log'` for all audit rows (only one distinct value in staging).
+2. Each host has exactly one audit.log file in the dataset.
+3. `host_id` is a 1:1 lookup from `source_host` via `host.host_key`.
+
+Validated: 3,048 distinct `(host_id, line_number)` values out of 3,048 rows.
+
+### Final 3NF Tables: Audit Domain
+
+10 tables total: 1 supertype + 1 message table + 8 subtypes.
+
+#### audit_event (3,048 rows)
+
+Supertype table. One row per raw audit log line. Row grain: one row per audit event.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | SERIAL | PK | Surrogate key |
+| host_id | INT | NOT NULL, FK -> host(host_id) | From `host.host_key = source_host` |
+| line_number | INT | NOT NULL | Per-file line number |
+| raw_line | TEXT | NOT NULL | Full line (provenance) |
+| type | VARCHAR(20) | NOT NULL | Discriminator (15 values across both files) |
+| epoch | DOUBLE PRECISION | NOT NULL | |
+| serial | INT | NOT NULL | |
+| timestamp | TIMESTAMPTZ | NOT NULL | |
+| pid | INT | nullable | |
+| uid | INT | nullable | |
+| auid | BIGINT | nullable | 4294967295 = unset sentinel |
+| ses | BIGINT | nullable | 4294967295 = unset sentinel |
+
+Unique constraint: `(host_id, line_number)`.
+
+```sql
+CREATE TABLE audit_event (
+    event_id    SERIAL PRIMARY KEY,
+    host_id     INT NOT NULL REFERENCES host(host_id),
+    line_number INT NOT NULL,
+    raw_line    TEXT NOT NULL,
+    type        VARCHAR(20) NOT NULL,
+    epoch       DOUBLE PRECISION NOT NULL,
+    serial      INT NOT NULL,
+    timestamp   TIMESTAMP WITH TIME ZONE NOT NULL,
+    pid         INT,
+    uid         INT,
+    auid        BIGINT,
+    ses         BIGINT,
+    UNIQUE (host_id, line_number)
+);
+```
+
+ETL: For each row in `stg_audit_line_raw`, resolve `host_id` via `host.host_key = source_host`. Insert one row per staging row.
+
+#### audit_message (2,614 rows)
+
+1NF resolution table. Unpacks the `msg` TEXT blob into 12 atomic columns. Cardinality: 0..1 per audit_event (events with non-null msg in staging get one row here).
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) | 1:1 from event side, 0..1 from message side |
+| op | VARCHAR(30) | nullable | PAM, USER_LOGIN |
+| acct | VARCHAR(50) | nullable | PAM (e.g. "root", "jhall") |
+| exe | TEXT | nullable | PAM, USER_LOGIN (e.g. "/usr/sbin/sshd") |
+| hostname | VARCHAR(50) | nullable | PAM, USER_LOGIN (msg hostname, not host entity) |
+| addr | VARCHAR(50) | nullable | PAM, USER_LOGIN |
+| terminal | VARCHAR(30) | nullable | PAM, USER_LOGIN, USER_CMD (e.g. "cron", "/dev/pts/0") |
+| res | VARCHAR(20) | nullable | PAM, USER_LOGIN, USER_CMD (e.g. "success") |
+| unit | VARCHAR(100) | nullable | SERVICE (service name, e.g. "put", "apt-daily") |
+| comm | VARCHAR(50) | nullable | SERVICE (e.g. "systemd") |
+| id | INT | nullable | USER_LOGIN (e.g. 1002 = uid of jhall) |
+| cwd | TEXT | nullable | USER_CMD (working directory) |
+| cmd | TEXT | nullable | USER_CMD (hex-encoded command) |
+
+```sql
+CREATE TABLE audit_message (
+    event_id INT PRIMARY KEY REFERENCES audit_event(event_id),
+    op       VARCHAR(30),
+    acct     VARCHAR(50),
+    exe      TEXT,
+    hostname VARCHAR(50),
+    addr     VARCHAR(50),
+    terminal VARCHAR(30),
+    res      VARCHAR(20),
+    unit     VARCHAR(100),
+    comm     VARCHAR(50),
+    id       INT,
+    cwd      TEXT,
+    cmd      TEXT
+);
+```
+
+Which msg fields each event type populates (validated from staging):
+
+| Event type | Populated msg fields |
+|---|---|
+| PAM (CRED_ACQ, USER_ACCT, USER_START, USER_END, CRED_DISP, USER_AUTH, CRED_REFR) | op, acct, exe, hostname, addr, terminal, res |
+| SERVICE (SERVICE_START, SERVICE_STOP) | unit, comm, exe, hostname, addr, terminal, res |
+| USER_LOGIN | op, id, exe, hostname, addr, terminal, res |
+| USER_CMD | cwd, cmd, terminal, res |
+
+Note: `terminal` (in msg) and `tty` (top-level LOGIN/SYSCALL field) are different source fields with different semantics. `terminal` is a msg-embedded value (e.g. "/dev/pts/0", "cron"); `tty` is a top-level auditd field (e.g. "(none)", "pts1"). They are stored in separate tables and should not be conflated.
+
+ETL: For each staging row where `msg` is not null, parse msg into the 12 attributes; insert one row with `event_id` from the audit_event insert.
+
+#### Subtype Tables (8; total, disjoint)
+
+Each subtype has `event_id` as PK and FK -> `audit_event(event_id)`. Exactly one subtype row per audit_event. Each table's only key is `event_id`; every non-key attribute depends only on `event_id` (no partial dependency, no transitive dependency).
+
+**audit_pam_event** (2,055 rows: 1,525 intranet + 530 internal_share)
+
+Event types: CRED_ACQ, USER_ACCT, USER_START, USER_END, CRED_DISP, USER_AUTH, CRED_REFR.
+
+| Column | Type | Constraint |
 |---|---|---|
-| Common fields | `audit_event` (supertype) | Direct mapping + host_id FK lookup via `host.host_key` |
-| `msg` blob (PAM types) | `audit_pam_event` (subtype) | Parse msg, route by type |
-| Top-level LOGIN fields | `audit_login_event` (subtype) | Direct mapping |
-| `msg` blob (SERVICE types) | `audit_service_event` (subtype) | Parse msg, route by type |
-| Top-level kernel fields | `audit_kernel_event` (subtype) | Direct mapping |
+| event_id | INT | PK, FK -> audit_event(event_id) |
 
-Key decisions pending:
-- host_id FK: look up `source_host` in `host.host_key` to get `host_id`
-- Sentinel handling for auid/ses (store as-is vs. NULL)
-- Dropped columns: a0-a3, items, ppid, gid, euid, suid, fsuid, egid, sgid, fsgid (low analytical value; can add back if needed)
+Single-column key; no other attributes. Type-specific content lives in `audit_message` (join on event_id).
+
+**audit_service_event** (555 rows: 471 intranet + 84 internal_share)
+
+Event types: SERVICE_START, SERVICE_STOP.
+
+| Column | Type | Constraint |
+|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) |
+
+Single-column key; no other attributes. Primary msg-derived attributes (unit, comm) are in `audit_message`.
+
+**audit_user_login_event** (3 rows: all intranet_server)
+
+Event types: USER_LOGIN.
+
+| Column | Type | Constraint |
+|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) |
+
+Single-column key; no other attributes. Msg-derived attributes (terminal, id, exe, hostname, addr) are in `audit_message`.
+
+**audit_user_cmd_event** (1 row: intranet_server only)
+
+Event types: USER_CMD.
+
+| Column | Type | Constraint |
+|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) |
+
+Single-column key; no other attributes. Msg-derived attributes (cwd, cmd, terminal, res) are in `audit_message`.
+
+**audit_login_event** (410 rows: 304 intranet + 106 internal_share)
+
+Event types: LOGIN. Attributes are top-level fields (msg is NULL for LOGIN).
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) | |
+| old_auid | BIGINT | nullable | Often 4294967295 sentinel |
+| old_ses | BIGINT | nullable | Often 4294967295 sentinel |
+| tty | VARCHAR(30) | nullable | e.g. "(none)" |
+| res | VARCHAR(10) | nullable | e.g. "1" (numeric success) |
+
+```sql
+CREATE TABLE audit_login_event (
+    event_id INT PRIMARY KEY REFERENCES audit_event(event_id),
+    old_auid BIGINT,
+    old_ses  BIGINT,
+    tty      VARCHAR(30),
+    res      VARCHAR(10)
+);
+```
+
+**audit_syscall_event** (8 rows: 4 intranet + 4 internal_share)
+
+Event types: SYSCALL. Attributes are top-level fields (msg is NULL).
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) | |
+| arch | VARCHAR(20) | nullable | e.g. x86_64 |
+| syscall | INT | nullable | Syscall number |
+| success | VARCHAR(5) | nullable | yes / no |
+| exit | BIGINT | nullable | Exit code |
+| exe | TEXT | nullable | Executable path |
+| comm | VARCHAR(50) | nullable | Command name |
+| tty | VARCHAR(30) | nullable | e.g. "pts1", "pts0" (all 8 rows non-null) |
+| key | VARCHAR(20) | nullable | Audit key |
+
+```sql
+CREATE TABLE audit_syscall_event (
+    event_id INT PRIMARY KEY REFERENCES audit_event(event_id),
+    arch     VARCHAR(20),
+    syscall  INT,
+    success  VARCHAR(5),
+    exit     BIGINT,
+    exe      TEXT,
+    comm     VARCHAR(50),
+    tty      VARCHAR(30),
+    key      VARCHAR(20)
+);
+```
+
+Low-value columns (a0-a3, items, ppid, gid, euid, suid, fsuid, egid, sgid, fsgid) are omitted. They are present in staging but have negligible analytical value for 8 rows.
+
+**audit_avc_event** (8 rows: 4 intranet + 4 internal_share)
+
+Event types: AVC. Attributes are top-level fields (msg is NULL).
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) | |
+| apparmor | VARCHAR(20) | nullable | AppArmor subsystem |
+| operation | VARCHAR(30) | nullable | e.g. profile_replace |
+| profile | VARCHAR(50) | nullable | Profile name |
+| name | TEXT | nullable | Resource name |
+| info | TEXT | nullable | Additional info |
+| comm | VARCHAR(50) | nullable | e.g. "apparmor_parser" |
+
+```sql
+CREATE TABLE audit_avc_event (
+    event_id  INT PRIMARY KEY REFERENCES audit_event(event_id),
+    apparmor  VARCHAR(20),
+    operation VARCHAR(30),
+    profile   VARCHAR(50),
+    name      TEXT,
+    info      TEXT,
+    comm      VARCHAR(50)
+);
+```
+
+Note: `comm` appears in both `audit_syscall_event` and `audit_avc_event` because it is a top-level (outer) field shared by SYSCALL and AVC event types. These are distinct from the msg-embedded `comm` in `audit_message` (populated for SERVICE events). No collision occurs: SYSCALL/AVC have msg=NULL and do not get `audit_message` rows.
+
+**audit_proctitle_event** (8 rows: 4 intranet + 4 internal_share)
+
+Event types: PROCTITLE. Attributes are top-level fields (msg is NULL).
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| event_id | INT | PK, FK -> audit_event(event_id) | |
+| proctitle | TEXT | nullable | Hex-encoded command line |
+
+```sql
+CREATE TABLE audit_proctitle_event (
+    event_id  INT PRIMARY KEY REFERENCES audit_event(event_id),
+    proctitle TEXT
+);
+```
+
+#### Subtype Summary
+
+| Subtype table | Key | Non-key columns | Msg fields (via audit_message join) | Row count |
+|---|---|---|---|---|
+| audit_pam_event | event_id | none | op, acct, exe, hostname, addr, terminal, res | 2,055 |
+| audit_service_event | event_id | none | unit, comm, exe, hostname, addr, terminal, res | 555 |
+| audit_user_login_event | event_id | none | op, id, exe, hostname, addr, terminal, res | 3 |
+| audit_user_cmd_event | event_id | none | cwd, cmd, terminal, res | 1 |
+| audit_login_event | event_id | old_auid, old_ses, tty, res | (msg is NULL for LOGIN) | 410 |
+| audit_syscall_event | event_id | arch, syscall, success, exit, exe, comm, tty, key | (msg is NULL for SYSCALL) | 8 |
+| audit_avc_event | event_id | apparmor, operation, profile, name, info, comm | (msg is NULL for AVC) | 8 |
+| audit_proctitle_event | event_id | proctitle | (msg is NULL for PROCTITLE) | 8 |
+
+Sum verified: 2,055 + 555 + 3 + 1 + 410 + 8 + 8 + 8 = 3,048.
+
+#### Subtype Routing Map (for loader implementation)
+
+| type value | Target subtype table |
+|---|---|
+| CRED_ACQ, USER_ACCT, USER_START, USER_END, CRED_DISP, USER_AUTH, CRED_REFR | audit_pam_event |
+| SERVICE_START, SERVICE_STOP | audit_service_event |
+| USER_LOGIN | audit_user_login_event |
+| USER_CMD | audit_user_cmd_event |
+| LOGIN | audit_login_event |
+| SYSCALL | audit_syscall_event |
+| AVC | audit_avc_event |
+| PROCTITLE | audit_proctitle_event |
+
+### Resolved Design Decisions: Audit Domain
+
+| # | Decision | Resolution | Rationale |
+|---|---|---|---|
+| 1 | Subtype granularity | 8 subtypes (not 4) | Each distinct event-type family gets its own table. Avoids mixing PAM/USER_LOGIN/USER_CMD into one wide subtype with many nulls. |
+| 2 | Shared audit_message table | One table for all msg-bearing subtypes | 12 unpacked msg attributes stored once; subtypes do not duplicate these columns. Join on event_id. |
+| 3 | Sentinel values (auid/ses = 4294967295) | Stored as-is | Linux kernel "unset" sentinel preserved at staging and in 3NF. Handling (convert to NULL vs. keep) can be decided later. |
+| 4 | Low-value syscall columns (a0-a3, items, ppid, gid, euid, suid, fsuid, egid, sgid, fsgid) | Omitted | Present in staging but negligible analytical value for 8 rows. Can be added if needed. |
+| 5 | Business key simplification | `(host_id, line_number)` instead of full 3-column key | `source_log` is always 'audit.log'; each host has exactly one audit file in scope. |
+| 6 | Result field unification (PAM msg res vs. LOGIN top-level res) | Kept separate | PAM/SERVICE res is text "success" in audit_message; LOGIN res is numeric "1" in audit_login_event. Different formats, different tables. |
+
+### EER Divergences: Audit Domain
+
+| Item | This document / implementation | Current EER | Deferred resolution |
+|---|---|---|---|
+| Audit subtype specialization | Total, disjoint (all 15 types routed) | Partial, disjoint | EER annotation should change to total |
+| audit_syscall_event.tty | Included (all 8 rows non-null) | Not shown | Add to EER |
+| audit_avc_event.comm | Included (all 8 rows non-null) | Not shown | Add to EER |
+| audit_syscall_event.exit | Included | Not shown | Add to EER |
+| audit_syscall_event.key | Included | Not shown | Add to EER |
+| source_log in audit_event | Omitted (always "audit.log") | Present in Log Line superclass | Not needed for audit-only scope |
+
+### 3NF Loading Order: Audit Domain
+
+```
+Phase 1: audit_event             (3,048 rows, FK -> host)
+Phase 2: audit_message           (2,614 rows, FK -> audit_event)
+Phase 3: audit_pam_event         (2,055 rows, FK -> audit_event)
+         audit_service_event     (555 rows, FK -> audit_event)
+         audit_user_login_event  (3 rows, FK -> audit_event)
+         audit_user_cmd_event    (1 row, FK -> audit_event)
+         audit_login_event       (410 rows, FK -> audit_event)
+         audit_syscall_event     (8 rows, FK -> audit_event)
+         audit_avc_event         (8 rows, FK -> audit_event)
+         audit_proctitle_event   (8 rows, FK -> audit_event)
+         (all 8 subtypes independent, can load in parallel)
+```
+
+audit_message can load in parallel with subtypes (both depend only on audit_event), but loading message first simplifies verification.
+
+### Verification Queries: Audit Domain
+
+```sql
+-- Row counts (exact expected values for ETL verification)
+SELECT 'audit_event' AS tbl, COUNT(*) AS actual, 3048 AS expected FROM audit_event
+UNION ALL SELECT 'audit_message', COUNT(*), 2614 FROM audit_message
+UNION ALL SELECT 'audit_pam_event', COUNT(*), 2055 FROM audit_pam_event
+UNION ALL SELECT 'audit_service_event', COUNT(*), 555 FROM audit_service_event
+UNION ALL SELECT 'audit_user_login_event', COUNT(*), 3 FROM audit_user_login_event
+UNION ALL SELECT 'audit_user_cmd_event', COUNT(*), 1 FROM audit_user_cmd_event
+UNION ALL SELECT 'audit_login_event', COUNT(*), 410 FROM audit_login_event
+UNION ALL SELECT 'audit_syscall_event', COUNT(*), 8 FROM audit_syscall_event
+UNION ALL SELECT 'audit_avc_event', COUNT(*), 8 FROM audit_avc_event
+UNION ALL SELECT 'audit_proctitle_event', COUNT(*), 8 FROM audit_proctitle_event;
+
+-- Subtype totality: every audit_event has exactly one subtype row
+SELECT ae.event_id
+FROM audit_event ae
+WHERE NOT EXISTS (SELECT 1 FROM audit_pam_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_service_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_user_login_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_user_cmd_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_login_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_syscall_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_avc_event WHERE event_id = ae.event_id)
+  AND NOT EXISTS (SELECT 1 FROM audit_proctitle_event WHERE event_id = ae.event_id);
+-- Expected: 0 rows (every event in exactly one subtype)
+
+-- Business key uniqueness
+SELECT host_id, line_number, COUNT(*)
+FROM audit_event
+GROUP BY host_id, line_number
+HAVING COUNT(*) > 1;
+-- Expected: 0 rows
+
+-- Every audit_event.host_id exists in host
+SELECT ae.event_id
+FROM audit_event ae
+LEFT JOIN host h ON ae.host_id = h.host_id
+WHERE h.host_id IS NULL;
+-- Expected: 0 rows
+
+-- Per-host breakdown
+SELECT h.host_key, COUNT(*) AS event_count
+FROM audit_event ae
+JOIN host h ON ae.host_id = h.host_id
+GROUP BY h.host_key;
+-- Expected: intranet_server = 2,316; internal_share = 732
+
+-- Exfiltration spot check (internal_share, unit=put)
+SELECT ae.event_id, ae.type, am.unit
+FROM audit_event ae
+JOIN audit_service_event ase ON ae.event_id = ase.event_id
+JOIN audit_message am ON ae.event_id = am.event_id
+JOIN host h ON ae.host_id = h.host_id
+WHERE h.host_key = 'internal_share' AND am.unit = 'put';
+-- Expected: 2 rows (SERVICE_START + SERVICE_STOP for dnsteal exfiltration)
+```
 
 ---
 
 ## 3NF Transformation: Attack Labels
 
-**Full design, DDL, and ETL steps:** See [labels_normalization_staging_to_3nf.md](labels_normalization_staging_to_3nf.md).
+Source staging table: `stg_attack_label_line_raw` (61,862 rows, 6 cols).
+Target: 5 normalized tables in the labels domain.
+Findings doc: `docs/data_exploration/notebook_findings/naman_labels_findings.md`.
+EER diagram: `docs/er_diagrams/combined_eer_3nf_v1.drawio.xml`.
+Reference: DATA201 Lecture 4 (normalization definitions).
 
-From `stg_attack_label_line_raw`:
+Implementation note: As with the other domains, 1NF and 2NF are documented as logical normalization stages. The implementation creates only the final 3NF physical tables and writes ETL that transforms directly from staging to 3NF.
 
-| Staging source | 3NF target(s) | Transformation |
+### Row Grain Recap
+
+| Staging table | Row grain | Rows | PK | Natural key(s) |
+|---|---|---|---|---|
+| `stg_attack_label_line_raw` | One row per labeled line in a source log file | 61,862 | `row_id` (SERIAL) | `(source_host, source_log, line_number)` verified unique, UNIQUE constraint enforced |
+
+### Normalization Issues (Labels vs. Lecture 4)
+
+| NF | Issue in staging | Lecture 4 view | Resolution |
+|---|---|---|---|
+| 1NF | `labels_json` is a JSON array of 2 to 4 label strings per record. `rules_json` is a nested JSON dict mapping labels to rule arrays. Both are multi-valued / non-atomic. | Not 1NF: cells do not hold single values. Repeating groups within a cell. | Decompose into junction tables: `labeled_line_label` (one row per label per line) and `labeled_line_rule` (one row per rule per label per line). Drop JSON columns from the line entity. |
+| 2NF | After 1NF, `labeled_line` has single-column PK (`labeled_line_id`). Junction tables are all-key (composite PK with no non-key attributes). | No partial dependencies possible: single-column PKs and all-key junctions. | No schema changes. 2NF is a verification checkpoint. |
+| 3NF | External functional dependency: `label_name -> attack_phase` (22 labels map to 7 phases from the project taxonomy). If phase were stored directly on the junction, it would be a transitive dependency (labeled_line_id -> label_name -> attack_phase). | Transitive dependency: non-key (label_name) determines another non-key (attack_phase). | Extract `attack_phase` lookup table (7 rows) and `attack_label` lookup table (22 rows with phase_id FK). Junctions reference `label_id` instead of label_name. |
+
+Summary: Real schema changes occur at 1NF (explode JSON into junctions) and 3NF (phase/label lookups). 2NF adds no tables or columns.
+
+### Logical Stage 1: 1NF Resolution
+
+Explode 2 JSON columns from `stg_attack_label_line_raw` into junction tables. Drop `labels_json` and `rules_json` from the line entity.
+
+New tables after 1NF:
+
+- `labeled_line` (61,862 rows): provenance columns only (source_host, source_log, line_number).
+- `labeled_line_label` (~184,517 rows): one row per (line, label). From `labels_json`: each staging row has 2 to 4 labels.
+- `labeled_line_rule` (~184,651 rows): one row per (line, label, rule). From `rules_json`: each label key maps to a list of rule names.
+
+The rule count (184,651) exceeds the label count (184,517) by 134 because some (line, label) pairs have multiple rules.
+
+### Logical Stage 2: 2NF Verification
+
+After 1NF, composite keys exist only in junction tables:
+
+| Table | PK | PK type | Non-key attributes |
+|---|---|---|---|
+| labeled_line | `labeled_line_id` | Single-column | 3 (source_host, source_log, line_number) |
+| labeled_line_label | `(labeled_line_id, label_id)` | Composite | 0 (all-key) |
+| labeled_line_rule | `(labeled_line_id, label_id, rule_name)` | Composite | 0 (all-key) |
+
+2NF result: no partial dependencies. Entity table has single-column PK. Junction tables are all-key (no non-key attributes to be partially dependent). No schema changes.
+
+### Logical Stage 3: 3NF Resolution via Lookup Tables
+
+The external functional dependency `label_name -> attack_phase` creates a transitive dependency if phase were stored alongside label assignments. 22 labels map to 7 attack phases (from the project taxonomy documented in `naman_labels_findings.md`).
+
+Resolution: Extract two lookup tables:
+
+- `attack_phase` (7 rows): one row per phase.
+- `attack_label` (22 rows): one row per label with `phase_id` FK to `attack_phase`.
+
+Junction tables reference `label_id` instead of label_name, removing the transitive dependency.
+
+### Final 3NF Tables: Labels Domain
+
+5 tables total.
+
+#### attack_phase (7 rows)
+
+3NF lookup table. Holds the 7 attack phases once; resolves the transitive dependency when phase is attached to a label. Row grain: one row per attack phase.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| phase_id | SERIAL | PK | Surrogate key |
+| phase_name | VARCHAR(50) | UNIQUE, NOT NULL | Natural key |
+
+```sql
+CREATE TABLE attack_phase (
+    phase_id   SERIAL PRIMARY KEY,
+    phase_name VARCHAR(50) NOT NULL UNIQUE
+);
+```
+
+Seed values (from project taxonomy): exfiltration, web_enumeration, initial_access, reconnaissance, privilege_escalation, password_cracking, exploitation.
+
+ETL: Seed from project taxonomy. Not derived from staging data.
+
+#### attack_label (22 rows)
+
+3NF lookup table. Resolves `label_name -> attack_phase` by holding 22 label names with their phase assignment. Row grain: one row per label.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| label_id | SERIAL | PK | Surrogate key |
+| label_name | VARCHAR(80) | UNIQUE, NOT NULL | Natural key |
+| phase_id | INT | FK -> attack_phase, NOT NULL | Phase assignment |
+
+```sql
+CREATE TABLE attack_label (
+    label_id   SERIAL PRIMARY KEY,
+    label_name VARCHAR(80) NOT NULL UNIQUE,
+    phase_id   INT NOT NULL REFERENCES attack_phase(phase_id)
+);
+```
+
+Label-to-phase mapping (22 labels across 7 phases):
+
+| Phase | Labels |
+|---|---|
+| exfiltration | attacker, dnsteal, dnsteal-received, dnsteal-dropped, exfiltration-service |
+| web_enumeration | attacker_http, dirb, wpscan |
+| initial_access | foothold, attacker_vpn |
+| reconnaissance | service_scan, dns_scan, network_scan, traceroute |
+| privilege_escalation | escalate, escalated_command, escalated_sudo_command, attacker_change_user, escalated_sudo_session |
+| password_cracking | crack_passwords |
+| exploitation | webshell_cmd, webshell_upload |
+
+ETL: Seed from project taxonomy using phase_id lookup from attack_phase. Not derived from staging data.
+
+Unknown-label policy: Every label string in `labels_json` must exist in the seeded `attack_label` table. If a label is not in the taxonomy, the ETL should fail (FK violation or explicit check).
+
+#### labeled_line (61,862 rows)
+
+Annotation grain entity. One row per (source_host, source_log, line_number). Provenance for joins to host and audit domains. Row grain: one row per labeled line.
+
+| Column | Type | Constraint | Notes |
+|---|---|---|---|
+| labeled_line_id | SERIAL | PK | Surrogate key |
+| source_host | VARCHAR(30) | NOT NULL | Same values as host.host_key |
+| source_log | VARCHAR(50) | NOT NULL | Log filename the labels annotate |
+| line_number | INT | NOT NULL | Line number in the raw log |
+
+UNIQUE constraint on `(source_host, source_log, line_number)`.
+
+```sql
+CREATE TABLE labeled_line (
+    labeled_line_id SERIAL PRIMARY KEY,
+    source_host     VARCHAR(30) NOT NULL,
+    source_log      VARCHAR(50) NOT NULL,
+    line_number     INTEGER NOT NULL,
+    UNIQUE (source_host, source_log, line_number)
+);
+```
+
+ETL: For each row in `stg_attack_label_line_raw`, insert one row with source_host, source_log, line_number. Build map `(source_host, source_log, line_number) -> labeled_line_id` for junction loading.
+
+No FKs from `labeled_line` to other domains. Joins to host and audit use provenance columns (see Cross-Domain Relationships below).
+
+#### labeled_line_label (~184,517 rows)
+
+Junction table. 1NF resolution of `labels_json`. Links labeled lines to attack labels (M:N). Row grain: one row per label per line.
+
+| Column | Type | Constraint |
 |---|---|---|
-| `labels_json` | Junction table (one row per label per record) | Parse JSON array |
-| `rules_json` | Junction table (one row per rule per label per record) | Parse JSON dict of arrays |
-| (external taxonomy) | `attack_phase` lookup table | 22 labels to 7 phases |
+| labeled_line_id | INT | PK, FK -> labeled_line(labeled_line_id) ON DELETE CASCADE |
+| label_id | INT | PK, FK -> attack_label(label_id) |
 
-Key decisions pending:
-- Exact junction table naming and schema
-- Whether `attack_phase` lookup is a table or a column on the label entity
-- Indexing strategy given 87.4% data skew toward dnsmasq.log
+```sql
+CREATE TABLE labeled_line_label (
+    labeled_line_id INT NOT NULL REFERENCES labeled_line(labeled_line_id) ON DELETE CASCADE,
+    label_id        INT NOT NULL REFERENCES attack_label(label_id),
+    PRIMARY KEY (labeled_line_id, label_id)
+);
+```
+
+ETL: For each staging row, parse `labels_json`, resolve labeled_line_id and label_id from lookup maps, insert one row per label.
+
+#### labeled_line_rule (~184,651 rows)
+
+Junction table. 1NF resolution of `rules_json`. Links (labeled line, label) pairs to detection rule names. Row grain: one row per rule per label per line.
+
+Composite FK `(labeled_line_id, label_id)` to `labeled_line_label` enforces that a rule can only exist for a (line, label) pair already in the label assignment junction.
+
+| Column | Type | Constraint |
+|---|---|---|
+| labeled_line_id | INT | PK, FK -> labeled_line(labeled_line_id) ON DELETE CASCADE |
+| label_id | INT | PK (composite FK with labeled_line_id to labeled_line_label) |
+| rule_name | VARCHAR(120) | PK, NOT NULL |
+
+```sql
+CREATE TABLE labeled_line_rule (
+    labeled_line_id INT NOT NULL,
+    label_id        INT NOT NULL,
+    rule_name       VARCHAR(120) NOT NULL,
+    PRIMARY KEY (labeled_line_id, label_id, rule_name),
+    FOREIGN KEY (labeled_line_id) REFERENCES labeled_line(labeled_line_id) ON DELETE CASCADE,
+    FOREIGN KEY (labeled_line_id, label_id) REFERENCES labeled_line_label(labeled_line_id, label_id)
+);
+```
+
+ETL: For each staging row, parse `rules_json` (dict of label -> list of rule names), resolve labeled_line_id and label_id, insert one row per rule per label. Must run after labeled_line_label (composite FK dependency).
+
+### Resolved Design Decisions: Labels Domain
+
+| # | Decision | Resolution | Rationale |
+|---|---|---|---|
+| 1 | Rule as lookup table? | Keep `rule_name` as VARCHAR in `labeled_line_rule` only; no separate `rule` table | 36 distinct rule names with no additional attributes. Avoids an extra table and join. Can add a `rule` table later if rule metadata is needed. |
+| 2 | labeled_line PK | Surrogate `labeled_line_id` + UNIQUE(source_host, source_log, line_number) | Simpler FKs in junctions than a 3-column composite key. |
+| 3 | host_id / audit_event_id on labeled_line? | Omitted | Join via provenance columns. Adding FKs would create cross-domain coupling and complicate loading order. |
+| 4 | Taxonomy source | Seeded from project taxonomy (naman_labels_findings.md, section 4) | Phases and labels are not derived from staging data. |
+| 5 | Unknown labels | Fail-fast: all label strings must exist in `attack_label` | FK violation or explicit check. No auto-creation of unknown labels. |
+| 6 | `labeled_line_label` as separate table | Yes, separate from `labeled_line_rule` | Simplifies queries that need only label assignments (common case). Provides composite-FK parent for `labeled_line_rule`. |
+
+### EER Divergences: Labels Domain
+
+| Item | This document / implementation | Current EER | Deferred resolution |
+|---|---|---|---|
+| Detection Rule entity | Deferred; `rule_name` stored as VARCHAR in `labeled_line_rule` | Modeled as separate entity with M:N relationship | Add rule table later if needed |
+| `labeled_line_label` junction | Additional table not in EER | EER has single "Label Assignment" entity | Update EER to show two-table split |
+| `attack_phase` as separate table | Extracted to resolve 3NF transitive dependency | Modeled as attribute of "Attack Label" | Expected conceptual-to-physical difference |
+
+### 3NF Loading Order: Labels Domain
+
+```
+Phase 1: attack_phase            (7 rows, no FK deps)
+Phase 2: attack_label            (22 rows, FK -> attack_phase)
+Phase 3: labeled_line            (61,862 rows, no FK deps to other label tables)
+Phase 4: labeled_line_label      (~184,517 rows, FK -> labeled_line, attack_label)
+Phase 5: labeled_line_rule       (~184,651 rows, composite FK -> labeled_line_label; FK -> labeled_line)
+```
+
+Phase 5 must follow Phase 4 because `labeled_line_rule` has a composite FK to `labeled_line_label`.
+
+### Verification Queries: Labels Domain
+
+```sql
+-- Row counts
+SELECT 'attack_phase' AS tbl, COUNT(*) AS actual, 7 AS expected FROM attack_phase
+UNION ALL SELECT 'attack_label', COUNT(*), 22 FROM attack_label
+UNION ALL SELECT 'labeled_line', COUNT(*), 61862 FROM labeled_line
+UNION ALL SELECT 'labeled_line_label', COUNT(*), 184517 FROM labeled_line_label
+UNION ALL SELECT 'labeled_line_rule', COUNT(*), 184651 FROM labeled_line_rule;
+
+-- Phase lookup correctness
+SELECT * FROM attack_phase ORDER BY phase_id;
+-- Expected: 7 rows
+
+-- Every label has a valid phase
+SELECT al.label_id, al.label_name
+FROM attack_label al
+LEFT JOIN attack_phase ap ON al.phase_id = ap.phase_id
+WHERE ap.phase_id IS NULL;
+-- Expected: 0 rows
+
+-- Candidate key uniqueness on labeled_line
+SELECT source_host, source_log, line_number, COUNT(*)
+FROM labeled_line
+GROUP BY source_host, source_log, line_number
+HAVING COUNT(*) > 1;
+-- Expected: 0 rows
+
+-- Per source file breakdown
+SELECT source_host, source_log, COUNT(*)
+FROM labeled_line
+GROUP BY source_host, source_log
+ORDER BY COUNT(*) DESC;
+-- Expected: inet-firewall/dnsmasq.log = 54,035 (largest), etc.
+
+-- Junction integrity: every label_id in junctions exists in attack_label
+SELECT DISTINCT lll.label_id
+FROM labeled_line_label lll
+LEFT JOIN attack_label al ON lll.label_id = al.label_id
+WHERE al.label_id IS NULL;
+-- Expected: 0 rows
+```
+
+---
+
+## Cross-Domain Relationships
+
+### Host to Audit (FK-based)
+
+`audit_event.host_id` references `host.host_id`. This is a direct FK relationship. When loading audit events, each source file is mapped to its host via `host.host_key = stg_audit_line_raw.source_host`.
+
+Only 2 of 22 hosts have audit logs in scope: intranet_server (2,316 events) and internal_share (732 events).
+
+### Host to Labels (provenance join, no FK)
+
+`labeled_line.source_host` holds the same values as `host.host_key`. There is no FK from `labeled_line` to `host`; the link is by equality on those attributes.
+
+```sql
+SELECT ll.*, h.hostname, h.host_id
+FROM labeled_line ll
+JOIN host h ON h.host_key = ll.source_host;
+```
+
+All 8 label files map to 5 distinct source_host values; each exists in the 22-host inventory.
+
+### Audit to Labels (provenance join, no FK)
+
+Labeled lines that annotate audit logs share the same provenance as audit events: same host (via source_host = host.host_key) and same log line (source_log = 'audit.log', line_number). For audit.log only, a labeled line corresponds to at most one audit event.
+
+```sql
+SELECT ae.event_id, ae.host_id, ae.line_number,
+       ll.labeled_line_id, al.label_name, ap.phase_name
+FROM audit_event ae
+JOIN host h ON h.host_id = ae.host_id
+JOIN labeled_line ll ON ll.source_host = h.host_key
+  AND ll.source_log = 'audit.log'
+  AND ll.line_number = ae.line_number
+JOIN labeled_line_label lll ON lll.labeled_line_id = ll.labeled_line_id
+JOIN attack_label al ON al.label_id = lll.label_id
+JOIN attack_phase ap ON ap.phase_id = al.phase_id;
+```
+
+Only 11 audit-labeled lines exist in scope: 9 from intranet_server (lines 1860 to 1868, privilege escalation) and 2 from internal_share (lines 667 to 668, data exfiltration).
 
 ---
 
 ## Full 3NF Loading Order
 
 ```
-Host domain (finalized):
-  1. os_release                (2 rows, no FK deps)
-  2. host                      (22 rows, FK -> os_release)
-  3. host_group, host_fqdn,    (FK -> host, parallel)
-     host_ipv4, host_ipv6,
-     host_log_config
+Host domain:
+  Phase 1: os_release                (2 rows, no FK deps)
+  Phase 2: host                      (22 rows, FK -> os_release)
+  Phase 3: host_group                (63 rows, FK -> host)
+           host_fqdn                 (20 rows, FK -> host)
+           host_ipv4                 (24 rows, FK -> host)
+           host_ipv6                 (24 rows, FK -> host)
+           host_log_config           (66 rows, FK -> host)
+           (all 5 independent, can load in parallel)
 
-Audit domain (pending):
-  4. audit_event               (FK -> host)
-  5. audit_pam_event,          (FK -> audit_event, parallel)
-     audit_login_event,
-     audit_service_event,
-     audit_kernel_event
+Labels domain (lookups first, then lines, then junctions):
+  Phase 4: attack_phase              (7 rows, no FK deps)
+  Phase 5: attack_label              (22 rows, FK -> attack_phase)
+  Phase 6: labeled_line              (61,862 rows, no FK deps to label tables)
+  Phase 7: labeled_line_label        (~184,517 rows, FK -> labeled_line, attack_label)
+  Phase 8: labeled_line_rule         (~184,651 rows, composite FK -> labeled_line_label)
 
-Labels domain (pending):
-  6. label junction tables     (FK -> label lookup + provenance join)
+Audit domain (depends on host):
+  Phase 4: audit_event               (3,048 rows, FK -> host)
+  Phase 5: audit_message             (2,614 rows, FK -> audit_event)
+  Phase 6: audit_pam_event           (2,055 rows, FK -> audit_event)
+           audit_service_event       (555 rows, FK -> audit_event)
+           audit_user_login_event    (3 rows, FK -> audit_event)
+           audit_user_cmd_event      (1 row, FK -> audit_event)
+           audit_login_event         (410 rows, FK -> audit_event)
+           audit_syscall_event       (8 rows, FK -> audit_event)
+           audit_avc_event           (8 rows, FK -> audit_event)
+           audit_proctitle_event     (8 rows, FK -> audit_event)
+           (all 8 subtypes independent, can load in parallel)
 ```
 
-Total: 12+ tables across 3-4 loading phases. Exact count depends on audit and label decomposition decisions.
+Labels and audit domains can load in parallel after the host domain completes. Phase numbers above represent logical ordering; labels phases 4 to 8 and audit phases 4 to 6 are independent of each other.
+
+Total: 22 tables across 3 domains (7 host + 10 audit + 5 labels).
+
+---
+
+## Mid-Presentation Summary
+
+This project normalizes security log data from the AIT Log Data Set V2.0 (russellmitchell testbed) into a 3NF relational schema in PostgreSQL. The normalization covers three domains for the mid-presentation scope:
+
+**Host inventory** (from servers.yaml, 22 machines): 7 tables. Multi-valued fields (groups, FQDNs, IP addresses) decomposed into junction/child tables (1NF). Transitive dependency on OS release information resolved via lookup table (3NF). Central `host` table serves as the integration point for all other domains via `host_key`.
+
+**Audit logs** (from 2 audit.log files, 3,048 events across intranet_server and internal_share): 10 tables. The `msg` TEXT blob unpacked into atomic columns in `audit_message` (1NF). 15 event types decomposed into 8 subtype tables via total, disjoint specialization (3NF), eliminating the transitive-like dependency where event type determines which columns are populated.
+
+**Attack labels** (from 8 JSONL label files, 61,862 labeled lines across 5 hosts): 5 tables. Multi-valued JSON arrays (labels, rules) decomposed into junction tables (1NF). External taxonomy dependency (label_name -> attack_phase) resolved via lookup tables (3NF).
+
+Cross-domain connections: audit events link to hosts via FK (`audit_event.host_id -> host.host_id`). Labels link to hosts and audit events via provenance joins on `(source_host, source_log, line_number)`, with no direct FK, preserving domain independence while enabling analytical queries across all three domains.

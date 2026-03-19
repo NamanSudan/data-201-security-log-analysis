@@ -1,6 +1,6 @@
 -- host: Central host reference entity (22 rows)
 -- One row per testbed machine. host_key is the cross-domain integration key.
--- Reference snapshot -- canonical schema is in src/models/final/host.py
+-- Reference snapshot - canonical schema is in src/models/final/host.py
 
 CREATE TABLE host (
     host_id              SERIAL PRIMARY KEY,
