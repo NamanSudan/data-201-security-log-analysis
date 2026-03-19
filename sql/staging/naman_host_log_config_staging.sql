@@ -1,7 +1,7 @@
 -- stg_host_log_config_raw: One row per log config entry per host (66 rows)
 -- Source: servers.yaml "logs" nested field (1-9 configs per host)
 -- FK to stg_host_raw.host_id
--- Reference snapshot -- canonical schema is in src/models/staging/host.py
+-- Reference snapshot - canonical schema is in src/models/staging/host.py
 
 CREATE TABLE stg_host_log_config_raw (
     config_id       SERIAL PRIMARY KEY,

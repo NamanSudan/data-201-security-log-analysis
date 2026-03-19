@@ -1,7 +1,7 @@
 -- stg_attack_label_line_raw: Merged table for all 8 label JSONL files (61,862 rows)
 -- labels_json and rules_json stored as TEXT (1NF violation, deferred to 3NF junction tables)
 -- Candidate key: (source_host, source_log, line_number)
--- Reference snapshot -- canonical schema is in src/models/staging/labels.py
+-- Reference snapshot - canonical schema is in src/models/staging/labels.py
 
 CREATE TABLE stg_attack_label_line_raw (
     row_id          SERIAL PRIMARY KEY,

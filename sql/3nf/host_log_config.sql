@@ -1,6 +1,6 @@
 -- host_log_config: Per-host log collection configuration (66 rows)
 -- Weak entity identified by (host_id, log_path). add_field_json retained as opaque JSON.
--- Reference snapshot -- canonical schema is in src/models/final/host.py
+-- Reference snapshot - canonical schema is in src/models/final/host.py
 
 CREATE TABLE host_log_config (
     config_id       SERIAL PRIMARY KEY,
