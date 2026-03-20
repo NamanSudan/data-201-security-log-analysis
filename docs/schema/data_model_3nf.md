@@ -32,13 +32,13 @@ Source 5 comprises 8 JSONL files across 5 hosts. All share an identical JSON sch
 
 ---
 
-## 2. Entity Catalog
+## 2. Relation Catalog
 
 ### Host Domain (7 tables)
 
 #### 2.1 os_release
 
-3NF lookup entity. Resolves transitive dependency: `distribution_release -> distribution, distribution_version`. Row grain: one row per OS release.
+3NF lookup table. Resolves the transitive dependency: `distribution_release -> distribution, distribution_version`. Row grain: one row per OS release.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -47,18 +47,18 @@ Source 5 comprises 8 JSONL files across 5 hosts. All share an identical JSON sch
 | distribution | VARCHAR(50) | NOT NULL | "Ubuntu" or "Debian" |
 | distribution_version | VARCHAR(20) | NOT NULL | "18.04" or "9.11" |
 
-2 rows total. `distribution_release` is the natural key (candidate key).
+2 rows total. `distribution_release` is a candidate key.
 
 #### 2.2 host
 
-Central reference entity. Every machine in the AIT testbed. Row grain: one row per host.
+Core table in the host domain. Row grain: one row per host in the AIT testbed.
 
-`host_key` is the downstream integration key: it aligns with `stg_audit_line_raw.source_host` and `stg_attack_label_line_raw.source_host`, enabling FK resolution when loading other domains into 3NF.
+`host_key` is a candidate key that aligns with `stg_audit_line_raw.source_host` and `stg_attack_label_line_raw.source_host`, enabling key resolution when loading other domains into the 3NF schema.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
 | host_id | SERIAL | PK | Surrogate key |
-| host_key | VARCHAR(50) | UNIQUE, NOT NULL | YAML dict key (e.g. "intranet_server"); integration key for cross-domain FK resolution |
+| host_key | VARCHAR(50) | UNIQUE, NOT NULL | YAML dict key (e.g. "intranet_server"); candidate key used for cross-domain key resolution during loading |
 | hostname | VARCHAR(100) | UNIQUE, NOT NULL | Machine hostname |
 | username | VARCHAR(50) | nullable | Only 7 employee hosts |
 | openvpn_user | VARCHAR(50) | nullable | Only 3 remote employees |
@@ -71,7 +71,7 @@ Central reference entity. Every machine in the AIT testbed. Row grain: one row p
 
 #### 2.3 host_group
 
-1NF junction entity (M:N). Decomposes multi-valued `groups` field.
+1NF junction table (M:N). Decomposes multi-valued `groups` attribute.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Composite PK (host_id, group_name). Each host has 2-5 groups.
 
 #### 2.4 host_fqdn
 
-1NF child entity (1:N). Decomposes multi-valued `fqdns` field.
+1NF child table (1:N). Decomposes the multi-valued `fqdns` attribute.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -97,7 +97,7 @@ Composite PK (host_id, fqdn). 7 hosts have 0 FQDNs (NULL in staging -> no rows h
 
 #### 2.5 host_ipv4
 
-1NF child entity (1:N). Decomposes multi-valued `ipv4_addresses` field.
+1NF child table (1:N). Decomposes multi-valued `ipv4_addresses` attribute.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -110,7 +110,7 @@ Composite PK (host_id, ipv4_address).
 
 #### 2.6 host_ipv6
 
-1NF child entity (1:N). Decomposes multi-valued `ipv6_addresses` field.
+1NF child table (1:N). Decomposes multi-valued `ipv6_addresses` attribute.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -123,7 +123,7 @@ Composite PK (host_id, ipv6_address).
 
 #### 2.7 host_log_config
 
-Child entity (weak entity in EER). Composite+multi-valued `logs` field already separated during staging. Row grain: one row per log config per host.
+Child table. The composite and multivalued `logs` field was separated during staging. Row grain: one row per log config per host.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Child entity (weak entity in EER). Composite+multi-valued `logs` field already s
 | file_chunk_size | INT | nullable | |
 | add_field_json | TEXT | nullable | Practical exception: opaque JSON payload retained as-is (not fully normalized) |
 
-UNIQUE constraint on (host_id, log_path), candidate business key, verified unique in current data.
+UNIQUE constraint on (host_id, log_path), candidate key, verified unique in current data.
 
 66 rows total (1-9 configs per host).
 
@@ -176,7 +176,7 @@ Unpacks the `msg` TEXT blob from staging into 12 atomic columns. Resolves the pr
 | op | VARCHAR(30) | nullable | PAM operation (e.g. PAM:accounting) |
 | acct | VARCHAR(50) | nullable | Account name (e.g. "root", "jhall") |
 | exe | TEXT | nullable | Executable path (e.g. "/usr/sbin/sshd") |
-| hostname | VARCHAR(50) | nullable | msg hostname field (not the host entity hostname) |
+| hostname | VARCHAR(50) | nullable | msg hostname field, not the host.hostname attribute |
 | addr | VARCHAR(50) | nullable | Source address ("?" or IP) |
 | terminal | VARCHAR(30) | nullable | Terminal (e.g. "cron", "/dev/pts/0") |
 | res | VARCHAR(20) | nullable | Result (e.g. "success") |
@@ -309,7 +309,7 @@ Event types: PROCTITLE.
 
 #### 2.18 attack_phase (lookup)
 
-3NF lookup entity. Holds the 7 attack phases from the project taxonomy. Resolves transitive dependency when phase is attached to a label. Row grain: one row per phase.
+3NF lookup table. Holds the 7 attack phases from the project taxonomy. Resolves transitive dependency when phase is attached to a label. Row grain: one row per phase.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -320,7 +320,7 @@ Event types: PROCTITLE.
 
 #### 2.19 attack_label (lookup)
 
-3NF lookup entity. Resolves `label_name -> attack_phase` (22 labels map to 7 phases). Row grain: one row per label.
+3NF lookup table. Resolves `label_name -> attack_phase` (22 labels map to 7 phases). Row grain: one row per label.
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -332,7 +332,7 @@ Event types: PROCTITLE.
 
 #### 2.20 labeled_line
 
-Annotation grain entity. One row per labeled line in a source log file. Provenance columns enable joins to host and audit domains. Row grain: one row per (source_host, source_log, line_number).
+Annotation grain table. One row per labeled line in a source log file. Provenance columns enable joins to host and audit relations. Row grain: one row per (source_host, source_log, line_number).
 
 | Attribute | Type | Constraint | Notes |
 |---|---|---|---|
@@ -356,7 +356,7 @@ UNIQUE constraint on (source_host, source_log, line_number).
 
 Composite PK (labeled_line_id, label_id). Each labeled line has 2 to 4 labels.
 
-~184,517 rows total.
+184,651 rows total.
 
 #### 2.22 labeled_line_rule (junction)
 
@@ -395,9 +395,9 @@ Composite PK (labeled_line_id, label_id, rule_name).
 
 ### Cross-Domain Relationships
 
-**Host to Audit (FK-based):** `audit_event.host_id` references `host.host_id`. Direct foreign key. When loading, `host.host_key = stg_audit_line_raw.source_host` resolves the FK.
+**Host to Audit (FK relationship):** `audit_event.host_id` references `host.host_id`. Direct foreign key. When loading, `host.host_key = stg_audit_line_raw.source_host` resolves the FK.
 
-**Host to Labels (provenance join, no FK):** `labeled_line.source_host` holds the same values as `host.host_key`. No FK exists between these tables; they join by equality on those attributes. This is intentional: labels annotate many log types, not just audit, so a direct FK to host would add cross-domain coupling.
+**Host to Labels (provenance join on provenance attributes, no FK):** `labeled_line.source_host` holds the same values as `host.host_key`. No FK exists between these tables; they join by equality on those attributes. This is intentional: labels annotate many log types, not just audit, so a direct FK to host would add cross-domain coupling.
 
 ```sql
 SELECT ll.*, h.hostname
@@ -405,7 +405,7 @@ FROM labeled_line ll
 JOIN host h ON h.host_key = ll.source_host;
 ```
 
-**Audit to Labels (provenance join, no FK):** For labeled lines that annotate audit logs (`source_log = 'audit.log'`), a labeled line corresponds to at most one audit event via the shared provenance tuple `(source_host, source_log, line_number)`.
+**Audit to Labels (provenance join on provenance attributes, no FK):** For labeled lines that annotate audit logs (`source_log = 'audit.log'`), a labeled line corresponds to at most one audit event via the shared provenance tuple `(source_host, source_log, line_number)`.
 
 ```sql
 SELECT ae.event_id, al.label_name, ap.phase_name
@@ -461,8 +461,8 @@ Sum of 8 subtypes: 2,055 + 555 + 410 + 8 + 8 + 8 + 3 + 1 = 3,048. Verified: matc
 | attack_phase | 7 | Project taxonomy (7 phases) |
 | attack_label | 22 | Project taxonomy (22 labels) |
 | labeled_line | 61,862 | One per staging row (8 JSONL files) |
-| labeled_line_label | ~184,517 | Sum of label-array lengths across all staging rows |
-| labeled_line_rule | ~184,651 | Sum of all rule entries in rules_json |
+| labeled_line_label | 184,517 | Sum of label-array lengths across all staging rows |
+| labeled_line_rule | 184,651 | Sum of all rule entries in rules_json |
 
 ---
 
