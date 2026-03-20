@@ -35,7 +35,7 @@ GROUP BY event_id, timestamp, audit_type, pam_operation,
          target_account, executable, terminal
 ORDER BY timestamp, event_id;
 
--- Expected: 9 rows showing two distinct attack bursts:
+-- Results: 9 rows showing two distinct attack bursts:
 -- Burst 1 (04:37:40 UTC): su from www-data to jhall via /bin/su (4 events)
 -- Burst 2 (04:38:06 UTC): sudo cat /etc/shadow via /usr/bin/sudo (5 events)
 -- Gap: 25.6 seconds between bursts.
@@ -63,7 +63,7 @@ FROM rule_stats
 ORDER BY lines_triggered DESC
 LIMIT 15;
 
--- Expected: dnsteal.domain.match is rank 1 (53K lines).
+-- Results: dnsteal.domain.match is rank 1 (53K lines).
 -- Audit-based rules rank lower by volume but catch critical escalation.
 
 
@@ -101,7 +101,7 @@ SELECT host_key,
 FROM labeled_audit
 ORDER BY timestamp, host_key;
 
--- Expected: 11 rows across 2 hosts.
+-- Results: 11 rows across 2 hosts.
 -- 04:37-04:38: intranet_server shows privilege_escalation
 -- 13:50: internal_share shows exfiltration (put service)
 -- ~9 hours apart: escalate on one host, exfiltrate from another.
@@ -135,6 +135,6 @@ SELECT seq,
 FROM labeled_audit_events
 ORDER BY seq;
 
--- Expected: Two distinct bursts.
+-- Results: Two distinct bursts.
 -- Burst 1 (events 1-4): su to jhall, all within 24ms.
 -- Burst 2 (events 5-9): sudo commands, starting 25.6 seconds later.
