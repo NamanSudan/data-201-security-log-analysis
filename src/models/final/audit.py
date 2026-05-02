@@ -16,7 +16,7 @@ Tables:
 Source: audit_3nf_normalization_plan.md (sections 6.1-6.3)
 """
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,7 +32,10 @@ class AuditEvent(Base):
     """
 
     __tablename__ = "audit_event"
-    __table_args__ = (UniqueConstraint("host_id", "line_number", name="uq_audit_event_host_line"),)
+    __table_args__ = (
+        UniqueConstraint("host_id", "line_number", name="uq_audit_event_host_line"),
+        Index("idx_audit_event_host_timestamp", "host_id", "timestamp"),
+    )
 
     event_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     host_id: Mapped[int] = mapped_column(Integer, ForeignKey("host.host_id"), nullable=False)

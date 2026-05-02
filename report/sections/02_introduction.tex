@@ -1,0 +1,57 @@
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{Motivation}
+Modern enterprise networks emit log streams from a heterogeneous mix of
+systems: web servers, audit daemons, virtual private network endpoints, name
+resolution services, and authentication subsystems. Security operations teams
+must reason across these streams to detect attacker activity, attribute
+events to a kill-chain phase, and reconstruct a timeline after the fact. In
+practice, the work is hampered because each log type lives in its own format,
+storage location, and tool. A relational database offers a single substrate
+where structured queries can join evidence across sources and ground-truth
+labels.
+
+This project takes a published, labeled, multi-host security log corpus
+\cite{landauer2022maintainable, ait2024dataset} and asks whether a single
+PostgreSQL database in third normal form can support a meaningful cross-log
+analysis of a real multi-stage attack. The dataset comes with attacker
+ground truth: every log line that participates in the simulated attack chain
+is labeled with one or more attack-phase identifiers, allowing us to
+quantify both detection coverage and the cost of false positives.
+
+\subsection{Problem and Research Gap}
+The AIT-LDSv2.0 corpus is large and heterogeneous: 295{,}243 log lines from
+eight sources, 61{,}862 labeled attack events across seven kill-chain
+phases. Most published analysis treats each log file independently, or
+flattens the entire corpus into a single denormalized table, losing the
+relational structure that makes cross-source queries cheap. We close that
+gap by:
+\begin{itemize}
+  \item Designing a 3NF schema that explicitly separates the host inventory,
+    audit event, and attack-label domains while preserving cross-domain
+    foreign keys.
+  \item Implementing a reproducible ETL from raw files through staging tables
+    into the final 3NF schema.
+  \item Demonstrating that the resulting database supports analytical SQL
+    expressive enough to reconstruct attack sequences and to compare
+    detection-rule effectiveness across log sources.
+\end{itemize}
+
+\subsection{Project Goals}
+The project has four explicit deliverables, each of which is reflected in a
+section of this report:
+\begin{enumerate}
+  \item A normalized relational schema with documented PK/FK and
+    normalization decisions (Section \ref{sec:schema}).
+  \item A reproducible PostgreSQL load pipeline (Section
+    \ref{sec:dbsetup}).
+  \item A portfolio of 13 SQL queries that answer concrete
+    attack-investigation questions, including indexing/\texttt{EXPLAIN}
+    work (Section \ref{sec:sql}).
+  \item An interactive dashboard that surfaces the query results to a
+    non-SQL audience (Section \ref{sec:dashboard}).
+\end{enumerate}
+
+% TBD: 1-2 sentences naming related work or other AIT analyses if you want
+% the prof to see it. Optional polish; not required by the rubric.
