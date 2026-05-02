@@ -16,6 +16,16 @@
 -- Index added (see sql/3nf/_indexes.sql):
 --   CREATE INDEX idx_audit_event_host_timestamp
 --     ON audit_event (host_id, timestamp);
+--
+-- Note: idx_audit_event_host_timestamp is created and dropped by
+-- Alembic migration 742e860d116f (see
+-- alembic/versions/20260501_1946_742e860d116f_add_privilege_escalation_index_and_.py).
+-- Normal users should not run any DROP INDEX or CREATE INDEX
+-- statement against this index from psql or pgAdmin. The Alembic
+-- migration is the only supported lifecycle path. The before and
+-- after plans recorded below are captured evidence; the
+-- reproduction instructions in each block use Alembic commands,
+-- not manual DDL.
 -- =====================================================================
 
 -- The query itself (run this to see the 9-row privilege-escalation chain).
@@ -39,10 +49,15 @@ ORDER BY ae.timestamp;
 -- =====================================================================
 
 -- BEFORE (no idx_audit_event_host_timestamp present):
--- Run with:
---   DROP INDEX IF EXISTS idx_audit_event_host_timestamp;
---   ANALYZE audit_event;
---   EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query above>;
+-- The plan below is captured evidence; do not regenerate it by
+-- running DROP INDEX in psql or pgAdmin. To reproduce the
+-- baseline in an isolated local DB:
+--   1. alembic -c alembic/alembic.ini downgrade -1
+--      (rolls migration 742e860d116f back, removing the index
+--      and the v_privilege_escalation_timeline view; only do
+--      this on a throwaway DB)
+--   2. ANALYZE audit_event;
+--   3. EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query above>;
 --
 --                                                                          QUERY PLAN
 -- ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -63,10 +78,16 @@ ORDER BY ae.timestamp;
 -- Execution Time: 1.462 ms
 
 -- AFTER (with idx_audit_event_host_timestamp on (host_id, timestamp)):
--- Run with:
---   CREATE INDEX idx_audit_event_host_timestamp ON audit_event (host_id, timestamp);
---   ANALYZE audit_event;
---   EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query above>;
+-- The plan below is captured evidence; do not regenerate it by
+-- running CREATE INDEX in psql or pgAdmin. After the BEFORE
+-- benchmark on the throwaway DB, restore the index and the view
+-- by running:
+--   1. alembic -c alembic/alembic.ini upgrade head
+--      (re-applies migration 742e860d116f, recreating
+--      idx_audit_event_host_timestamp and
+--      v_privilege_escalation_timeline)
+--   2. ANALYZE audit_event;
+--   3. EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query above>;
 --
 --                                                                                              QUERY PLAN
 -- -----------------------------------------------------------------------------------------------------------------------------------------------------------------
