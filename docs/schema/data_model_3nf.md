@@ -745,3 +745,62 @@ JOIN labeled_line_label lll ON lll.labeled_line_id = ll.labeled_line_id
 JOIN attack_label al ON al.label_id = lll.label_id
 JOIN attack_phase ap ON ap.phase_id = al.phase_id;
 ```
+
+---
+
+## 8. Performance Indexes and Saved Views (Alembic-managed)
+
+Two analytical objects extend the base 22-table 3NF schema: one composite index and one saved view. Both are owned by a single Alembic migration so every developer's local DB stays in sync.
+
+**Migration file:** `alembic/versions/20260501_1946_742e860d116f_add_privilege_escalation_index_and_.py`
+
+**Revision:** `742e860d116f` (parent: `b4258b656aa5`).
+
+**Canonical DDL (rubric artifacts):** `sql/3nf/_indexes.sql` and `sql/3nf/_views.sql`. These files exist as the source-of-truth DDL that satisfies the rubric's `indexes.sql` and saved-views requirements. The runtime application path is the Alembic migration, not these files.
+
+### 8.1 Index: idx_audit_event_host_timestamp
+
+Composite B-tree index on `audit_event(host_id, timestamp)`.
+
+Why it exists:
+
+- Satisfies the "indexing / EXPLAIN improvement" line on the SQL Analysis rubric (the gate from Adequate to Excellent on the report's 20-point criterion).
+- Speeds up the incident-response access pattern: zoom into a specific host within a narrow time window. Without this index the planner does a Seq Scan on `audit_event` and applies the timestamp filter row by row.
+- EXPLAIN ANALYZE evidence on the russellmitchell slice (3,048 audit events): execution time dropped from 1.462 ms (Seq Scan) to 0.640 ms (Index Scan using `idx_audit_event_host_timestamp`), with planner cost from 171.22 to 24.79 and shared buffers touched from 141 to 33. Full plans recorded in `sql/queries/advanced/naman_explain_index_improvement.sql`.
+
+### 8.2 View: v_privilege_escalation_timeline
+
+Saved view that joins `audit_event` + `audit_message` + `host` + `labeled_line` + `labeled_line_label` + `attack_label` + `attack_phase` + `labeled_line_rule`, filtered to `attack_phase.phase_name = 'privilege_escalation'`. Aggregates labels and rules per event with `string_agg`.
+
+Row grain: one row per audit event that carries a `privilege_escalation` label.
+
+Why it exists:
+
+- Satisfies the "saved queries / views" line on the Report Quality & Reproducibility rubric, and supplies the "Views" category that helps clear the "at least 4 SQL categories" Excellent gate on the Presentation SQL rubric.
+- Encapsulates the seven-table privilege-escalation join used by the dashboard, so the chart code becomes a one-line `SELECT ... FROM v_privilege_escalation_timeline ORDER BY timestamp` instead of re-typing the join body.
+- Returns 9 rows on the russellmitchell slice: the `su` + `sudo` chain on `intranet_server` between 2022-01-24 04:37:40 and 04:38:06 UTC.
+
+### 8.3 Reproducing on a teammate's machine
+
+This change adds a new Alembic migration. After pulling the branch (or after it merges into `dev`), every teammate must apply the migration locally before the index and view appear in their DB:
+
+```bash
+# from the repo root
+source venv/bin/activate
+alembic -c alembic/alembic.ini upgrade head
+```
+
+Then verify:
+
+```bash
+docker exec security-logs-dev psql -U security_logs_user -d security_logs \
+  -c "SELECT version_num FROM alembic_version;" \
+  -c "SELECT indexname FROM pg_indexes WHERE tablename = 'audit_event' ORDER BY indexname;" \
+  -c "SELECT viewname FROM pg_views WHERE schemaname = 'public';"
+```
+
+Expected: `version_num = 742e860d116f`, `idx_audit_event_host_timestamp` appears in the indexes list, and `v_privilege_escalation_timeline` appears in the views list.
+
+If the local Postgres in Docker is missing, has been reset, or never had data loaded, follow the project setup steps in `README.md` first (start Docker, run all migrations from scratch, reload data) and then re-run the upgrade command above to pick up this revision.
+
+Do not create the index or view by hand in pgAdmin or psql. Alembic owns both objects; a manual copy will collide with the migration on the next upgrade or downgrade.

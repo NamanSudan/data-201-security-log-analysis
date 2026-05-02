@@ -8,11 +8,10 @@
 -- op.drop_index in downgrade) so every developer's local DB stays in
 -- sync. See alembic/versions/ for the existing migration chain.
 --
--- Status (2026-05-01): index below was created manually in psql against
--- the local dev DB for EXPLAIN ANALYZE testing only. It must be either
---   (a) converted to an Alembic migration, or
---   (b) dropped before final submission.
--- See WORK_HANDOVER_NEXT_SESSION.md for the migration scaffold.
+-- Status (2026-05-01): the index below is managed by Alembic. Migration
+-- 20260501_1946_742e860d116f_add_privilege_escalation_index_and_.py
+-- (revision 742e860d116f) creates it in upgrade and drops it in
+-- downgrade. Run alembic -c alembic/alembic.ini upgrade head to apply.
 -- =====================================================================
 
 -- Index 1: Composite (host_id, timestamp) on audit_event.

@@ -8,11 +8,10 @@
 -- SQL block in upgrade, with the matching DROP VIEW in downgrade) so
 -- every developer's local DB stays in sync.
 --
--- Status (2026-05-01): the view below was created manually in psql
--- against the local dev DB for testing only. It must be either
---   (a) converted to an Alembic migration, or
---   (b) dropped before final submission.
--- See WORK_HANDOVER_NEXT_SESSION.md for the migration scaffold.
+-- Status (2026-05-01): the view below is managed by Alembic. Migration
+-- 20260501_1946_742e860d116f_add_privilege_escalation_index_and_.py
+-- (revision 742e860d116f) creates it in upgrade and drops it in
+-- downgrade. Run alembic -c alembic/alembic.ini upgrade head to apply.
 -- =====================================================================
 
 -- View: v_privilege_escalation_timeline
