@@ -1,0 +1,74 @@
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+\subsection{Findings}
+Three findings stand out from the analysis in
+Section~\ref{sec:sql}:
+\begin{enumerate}
+  \item \textbf{Volume is not coverage.} Exfiltration labels dominate
+    the corpus by raw line count ($\sim 53$K labeled lines), but this
+    is an artefact of the DNS-tunneling phase emitting one labeled
+    line per DNS query. The privilege-escalation phase has only 82
+    labeled lines but spans five log sources, and the operational
+    severity of an account takeover is incomparably higher. A
+    detection program optimized for label volume would miss the most
+    consequential phase entirely.
+  \item \textbf{Cross-source joins are diagnostic.} Query A4 and
+    A6 reconstruct the privilege-escalation sequence and the
+    cross-host lateral movement using foreign-key joins between audit
+    events and attack labels. Neither view is recoverable from any
+    single log file in isolation; the database makes both legible in
+    a single ordering.
+  \item \textbf{Timing-only detection is feasible for short bursts.}
+    Query A7 uses only \texttt{LAG} over event timestamps and detects
+    two distinct attack bursts on \texttt{intranet\_server} without
+    consulting a single label. This is a useful unsupervised signal
+    that complements rule-based detection.
+\end{enumerate}
+
+\subsection{Limitations}
+\begin{itemize}
+  \item \textbf{Single testbed slice.} The current iteration covers the
+    \texttt{russellmitchell} testbed only. The other four testbed
+    machines in AIT-LDSv2.0 share the same schema and could be
+    appended with no model changes; the work is loader-only.
+  \item \textbf{Out-of-scope log domains.} DNS, OpenVPN, Apache, and
+    system auth logs were explored in notebooks but are not loaded
+    into the relational schema. Bringing them in would lengthen the
+    SQL portfolio (especially for the exfiltration phase) but does
+    not change the schema design.
+  \item \textbf{Single-machine deployment.} The PostgreSQL container
+    runs on one developer machine. The current corpus is small enough
+    that this is fine; scaling to the full AIT-LDSv2.0 with all
+    testbeds and all log domains would push past a single instance and
+    invite the distributed-SQL discussion from Lecture 12.
+  \item \textbf{Static dashboard scope.} The Streamlit dashboard
+    currently shows aggregate views and a filterable timeline. A real
+    SOC dashboard would also support time-window scrubbing, alert
+    drill-down, and per-rule false-positive review. We treat these as
+    future work rather than as gaps.
+\end{itemize}
+
+\subsection{Future Work}
+Concrete and bounded next steps, in order:
+\begin{enumerate}
+  \item \textbf{Load the remaining four testbeds.} The schema is
+    testbed-agnostic; the loader needs a single configuration change
+    and an additional run. Brings the labeled corpus from $\sim$62K
+    to $\sim$300K rows.
+  \item \textbf{Add DNS and OpenVPN domains.} The DNS exfiltration
+    phase is severely under-represented in the audit-only schema.
+    Adding \texttt{dns\_query} and \texttt{vpn\_session} tables (with
+    obvious FKs to \texttt{host}) would let queries like A5
+    (detection-rule effectiveness) compare \texttt{dnsteal.*} rules
+    against audit-based rules on equal footing.
+  \item \textbf{Materialize \texttt{v\_attack\_timeline}.} As the
+    corpus grows, the underlying view will become the dashboard
+    bottleneck. Promoting it to a materialized view with an
+    incremental-refresh schedule is a straightforward optimization
+    and provides natural snapshot semantics for the report.
+  \item \textbf{Productionize the dashboard.} Add
+    user authentication, a time-range picker, and a Slack-friendly
+    export of the attack timeline. None of these require schema
+    changes.
+\end{enumerate}

@@ -1,0 +1,26 @@
+\begin{abstract}
+We design, load, and exercise a third normal form (3NF) relational database
+over the AIT Log Data Set V2.0 (AIT-LDSv2.0), a publicly released enterprise
+security log corpus that captures a simulated multi-stage cyberattack across
+22 networked hosts. The raw corpus contains 295{,}243 log lines across eight
+sources and 61{,}862 ground-truth attack labels spanning seven kill-chain
+phases. Our schema decomposes a heterogeneous mix of YAML, key-value
+\texttt{auditd}, and JSONL data into 22 normalized tables organized into three
+domains (host inventory, audit events, attack labels), enforced by primary and
+foreign key constraints in PostgreSQL 16. We articulate the normalization
+journey from staging tables (which preserve source-faithful 1NF violations) to
+3NF, using surrogate keys, lookup tables, and supertype/subtype decomposition
+of audit event records. On top of the loaded database we present a portfolio
+of thirteen analytical SQL queries that answer concrete attack-investigation
+questions: from baseline service activity, to detection-rule effectiveness,
+to a six-table CTE-and-window-function reconstruction of the privilege
+escalation sequence on a single host. We further demonstrate an indexing
+improvement validated with \texttt{EXPLAIN ANALYZE} and an interactive
+Streamlit dashboard exposing eight visualizations directly bound to these
+queries. Our findings show that exfiltration-related labels dominate the
+corpus by line count (53{,}000+ lines across two log sources), while
+privilege escalation, the most operationally critical phase, leaves only
+82 labeled lines but spans five distinct log sources, illustrating why a
+relational schema with cross-source joins is more diagnostic than any
+single log file in isolation.
+\end{abstract}
