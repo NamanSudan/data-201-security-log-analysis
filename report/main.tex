@@ -1,0 +1,65 @@
+% =============================================================================
+% DATA 201 - Final Technical Report
+% Group 5: Naman Sudan, River Roseveare-Hunt, Ishaan Shetty
+% Spring 2026, San Jose State University
+%
+% Compile order on Overleaf: pdflatex -> bibtex -> pdflatex -> pdflatex
+% Or just hit "Recompile" twice on Overleaf and the bibliography will resolve.
+% =============================================================================
+
+\documentclass[10pt,conference]{IEEEtran}
+
+% Standard IEEE-friendly packages
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+% SQL listings setup (used in sections/06_sql_analysis.tex)
+\input{listings_sql_setup}
+
+\begin{document}
+
+\title{Reconstructing a Multi-Stage Cyberattack with a Relational Database:\\
+A 3NF Schema and SQL Analytics over the AIT-LDSv2.0 Log Corpus}
+
+\author{
+\IEEEauthorblockN{Naman Sudan, River Roseveare-Hunt, Ishaan Shetty}
+\IEEEauthorblockA{Department of Applied Data Science\\
+San Jose State University\\
+DATA 201, Spring 2026 (Group 5)\\
+\{naman.sudan, river.roseveare-hunt, ishaan.shetty\}@sjsu.edu}
+}
+
+\maketitle
+
+\input{sections/01_abstract}
+\input{sections/02_introduction}
+\input{sections/03_dataset}
+\input{sections/04_schema_normalization}
+\input{sections/05_database_setup}
+\input{sections/06_sql_analysis}
+\input{sections/07_dashboard}
+\input{sections/08_conclusion}
+\input{sections/09_references_ai}
+\input{sections/10_appendix}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

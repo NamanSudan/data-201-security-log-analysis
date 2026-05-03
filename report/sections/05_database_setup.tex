@@ -1,0 +1,115 @@
+\section{Database Setup and Loading}
+\label{sec:dbsetup}
+
+\subsection{Stack}
+We use PostgreSQL 16 \cite{postgresql} running inside a single Docker
+container defined in \texttt{docker-compose.yml} \cite{docker}.
+Schema migrations are managed by Alembic \cite{alembic} so that any team
+member can rebuild the database from a clean state with a single command.
+Application code is Python 3.12 with SQLAlchemy ORM models for parsing
+and loading.
+
+\subsection{Repository Layout}
+\begin{verbatim}
+data-201-security-log-analysis/
+|-- alembic/                  versioned schema migrations
+|-- docker-compose.yml        single-service Postgres
+|-- src/
+|   |-- models/               SQLAlchemy models
+|   |-- parsers/              raw -> structured dicts
+|   `-- loaders/              dicts -> Postgres rows
+|-- sql/
+|   |-- 3nf/                  per-table CREATE TABLE
+|   |-- queries/              basic + advanced queries
+|   `-- staging/              staging-table DDL
+|-- notebooks/                10 exploration notebooks
+|-- docs/                     schema, ERD, findings
+`-- report/                   this report
+\end{verbatim}
+
+\subsection{Reproducible Load}
+The full load runs in five commands from a clean clone:
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, frame=single]
+docker compose up -d                  # Postgres on :5432
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+alembic -c alembic/alembic.ini upgrade head
+python -m src.loaders.run_all
+\end{lstlisting}
+
+The migration chain creates 22 tables across staging and 3NF schemas; the
+loader script reads the raw \texttt{russellmitchell} files, runs the
+parsers in \texttt{src/parsers/}, and inserts rows in dependency order
+(host inventory first, then audit events, then attack labels).
+
+\subsection{Final Row Counts}
+Table \ref{tab:rowcounts} reports the final loaded row counts. Total
+across all 22 tables: $\approx$439{,}000 rows. The largest single table is
+\texttt{labeled\_line\_label} ($\approx$77{,}000 rows: a many-to-many
+junction between labeled lines and labels).
+
+\begin{table}[htbp]
+\caption{Final loaded row counts by domain (verified 2026-05-01).}
+\label{tab:rowcounts}
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Domain} & \textbf{Table} & \textbf{Rows} \\
+\midrule
+Host inventory   & host                       & 22       \\
+                 & host\_group                & 63       \\
+                 & host\_fqdn                 & 20       \\
+                 & host\_ipv4                 & 24       \\
+                 & host\_ipv6                 & 24       \\
+                 & host\_log\_config          & 66       \\
+                 & os\_release                & 2        \\
+\midrule
+Audit events     & audit\_event               & 3{,}048  \\
+                 & audit\_message             & 2{,}614  \\
+                 & audit\_pam\_event          & 2{,}055  \\
+                 & audit\_service\_event      & 555      \\
+                 & audit\_login\_event        & 410      \\
+                 & audit\_user\_login\_event  & 3        \\
+                 & audit\_user\_cmd\_event    & 1        \\
+                 & audit\_syscall\_event      & 8        \\
+                 & audit\_avc\_event          & 8        \\
+                 & audit\_proctitle\_event    & 8        \\
+\midrule
+Attack labels    & labeled\_line              & 61{,}862 \\
+                 & labeled\_line\_label       & 184{,}517 \\
+                 & labeled\_line\_rule        & 184{,}651 \\
+                 & attack\_label              & 22       \\
+                 & attack\_phase              & 7        \\
+\midrule
+\textbf{Total}   &                            & \textbf{$\approx$439{,}998} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Integrity Verification}
+After load we run a small set of integrity checks (excerpt; full script
+lives in \texttt{sql/integrity\_checks.sql}):
+
+\begin{lstlisting}[language=SQL]
+-- Every audit_event references a real host
+SELECT COUNT(*) AS orphans
+FROM audit_event ae
+LEFT JOIN host h ON h.host_id = ae.host_id
+WHERE h.host_id IS NULL;          -- expect 0
+
+-- Every labeled_line line_number lands inside its host's audit_event
+-- range when source_log = 'audit.log'
+SELECT COUNT(*) AS unmatched
+FROM labeled_line ll
+WHERE ll.source_log = 'audit.log'
+  AND NOT EXISTS (
+    SELECT 1 FROM audit_event ae
+    JOIN host h ON h.host_id = ae.host_id
+    WHERE h.host_key = ll.source_host
+      AND ae.line_number = ll.line_number
+  );                              -- expect 0
+\end{lstlisting}
+
+% TBD: list the actual numeric results from running the checks. Naman to
+% paste after the consolidated sql/integrity_checks.sql is finalized.

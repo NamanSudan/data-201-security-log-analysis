@@ -1,0 +1,32 @@
+% SQL syntax styling for the listings package.
+% Imported by main.tex and consumed throughout sections/06_sql_analysis.tex.
+
+\lstdefinelanguage{SQL}{
+  morekeywords={SELECT,FROM,WHERE,JOIN,LEFT,RIGHT,INNER,OUTER,FULL,CROSS,
+                ON,AND,OR,NOT,IS,NULL,GROUP,BY,HAVING,ORDER,LIMIT,OFFSET,
+                WITH,AS,CASE,WHEN,THEN,ELSE,END,DISTINCT,COUNT,SUM,AVG,
+                MIN,MAX,ROW_NUMBER,DENSE_RANK,RANK,LAG,LEAD,OVER,
+                PARTITION,EXISTS,IN,UNION,INTERSECT,EXCEPT,EXPLAIN,
+                ANALYZE,CREATE,INDEX,VIEW,TABLE,INSERT,UPDATE,DELETE,
+                BEGIN,COMMIT,ROLLBACK,EXTRACT,EPOCH,COALESCE,CAST,
+                STRING_AGG,DATE,TIMESTAMP},
+  sensitive=false,
+  morecomment=[l]{\-\-},
+  morestring=[b]'
+}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\bfseries\color{blue!60!black},
+  commentstyle=\itshape\color{green!50!black},
+  stringstyle=\color{purple},
+  breaklines=true,
+  breakatwhitespace=true,
+  showstringspaces=false,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=4pt,
+  language=SQL,
+  captionpos=b,
+  tabsize=2
+}

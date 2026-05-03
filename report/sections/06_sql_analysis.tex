@@ -1,0 +1,473 @@
+\section{SQL Analysis and Results}
+\label{sec:sql}
+
+The query portfolio contains thirteen analytic queries (six basic and seven
+advanced) plus one performance-tuned query and one persisted view. Together
+they cover five SQL categories called out by the project rubric: subqueries,
+common table expressions (CTEs), window functions, multi-table joins
+($\geq 3$ tables), and indexing / \texttt{EXPLAIN} performance work. Every
+query is committed in the project repo under \texttt{sql/queries/} with the
+naming convention \texttt{<owner>\_<short\_name>.sql}.
+
+For each query we present the domain question, the SQL, a result snapshot,
+and a one-paragraph insight. Result snapshots in this report are
+PostgreSQL output exported from \texttt{psql} or rendered from the
+Streamlit dashboard.
+
+\subsection{Methodology}
+All queries run against the loaded database documented in
+Section~\ref{sec:dbsetup}. Each query is reproducible: a reader who has
+followed the load instructions can paste any \texttt{SELECT} below into
+their \texttt{psql} session and obtain the same result. Where helpful we
+note the technique label (CTE, window function, etc.) so the rubric
+mapping is unambiguous.
+
+% =========================================================================
+\subsection{Basic Queries}
+% =========================================================================
+
+\subsubsection{B1 (River): Labeled lines per source host}
+\textbf{Question.} Which hosts contribute the most labeled attack
+evidence?
+
+\begin{lstlisting}[language=SQL]
+SELECT source_host,
+       COUNT(*) AS labeled_line_count
+FROM labeled_line
+GROUP BY source_host
+ORDER BY labeled_line_count DESC;
+\end{lstlisting}
+
+% TODO: insert result snapshot at figures/q_b1_result.png
+\textbf{Insight.} % TBD: river to add a 2-3 sentence interpretation.
+The dominant host (by labeled-line count) frames the rest of the analysis.
+
+% -------------------------------------------------------------------------
+\subsubsection{B2 (River): Attack labels per phase}
+\textbf{Question.} How many distinct labels does each attack phase carry?
+\begin{lstlisting}[language=SQL]
+SELECT ap.phase_name,
+       COUNT(al.label_id) AS label_count
+FROM attack_phase ap
+FULL OUTER JOIN attack_label al ON al.phase_id = ap.phase_id
+GROUP BY ap.phase_id, ap.phase_name
+ORDER BY label_count DESC;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_b2_result.png
+\textbf{Insight.} % TBD river: which phases have the richest taxonomy?
+
+% -------------------------------------------------------------------------
+\subsubsection{B3 (River): Audit-event count per host}
+\textbf{Question.} Which hosts produce \texttt{auditd} traces, and how
+many?
+
+\begin{lstlisting}[language=SQL]
+SELECT h.hostname,
+       h.host_key,
+       COUNT(ae.event_id) AS event_count
+FROM host h
+INNER JOIN audit_event ae ON ae.host_id = h.host_id
+GROUP BY h.host_id, h.hostname, h.host_key
+ORDER BY event_count DESC;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_b3_result.png
+\textbf{Insight.} % TBD river: confirms only two hosts have audit logs in
+% the russellmitchell slice.
+
+% -------------------------------------------------------------------------
+\subsubsection{B4 (Ishaan): Labeled lines per attack phase}
+\textbf{Question.} How heavily is each phase represented in the labeled
+data?
+\begin{lstlisting}[language=SQL]
+SELECT ap.phase_name, COUNT(*) AS labeled_lines
+FROM attack_phase ap
+JOIN attack_label al  ON al.phase_id  = ap.phase_id
+JOIN labeled_line_label lll ON lll.label_id = al.label_id
+GROUP BY ap.phase_name
+ORDER BY labeled_lines DESC;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_b4_result.png
+\textbf{Insight.} % TBD ishaan: exfiltration dominates by line count.
+
+% -------------------------------------------------------------------------
+\subsubsection{B5 (Ishaan): Top-10 detection rules}
+\textbf{Question.} Which rules contribute the most labels?
+\begin{lstlisting}[language=SQL]
+SELECT rule_name, COUNT(*) AS times_used
+FROM labeled_line_rule
+GROUP BY rule_name
+ORDER BY times_used DESC
+LIMIT 10;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_b5_result.png
+\textbf{Insight.} % TBD ishaan: dnsteal.domain.match dominates.
+
+% -------------------------------------------------------------------------
+\subsubsection{B6 (Naman): Service activity baseline}
+\textbf{Question.} What is the baseline service activity on monitored
+hosts? Establishing the baseline lets us see why one stop/start pair
+later stands out as anomalous.
+\begin{lstlisting}[language=SQL]
+SELECT h.host_key,
+       am.unit AS service_name,
+       SUM(CASE WHEN ae.type = 'SERVICE_START' THEN 1 ELSE 0 END) AS starts,
+       SUM(CASE WHEN ae.type = 'SERVICE_STOP'  THEN 1 ELSE 0 END) AS stops
+FROM audit_event ae
+JOIN audit_service_event ase ON ase.event_id = ae.event_id
+JOIN audit_message am        ON am.event_id  = ae.event_id
+JOIN host h                  ON h.host_id    = ae.host_id
+GROUP BY h.host_key, am.unit
+ORDER BY h.host_key,
+         SUM(CASE WHEN ae.type = 'SERVICE_START' THEN 1 ELSE 0 END)
+       + SUM(CASE WHEN ae.type = 'SERVICE_STOP'  THEN 1 ELSE 0 END) DESC;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_b6_result.png
+\textbf{Insight.} The query returns 33 (host, service) rows.
+\texttt{phpsessionclean} dominates \texttt{intranet\_server} with 384
+events. The \texttt{put} service on \texttt{internal\_share}, with a
+single start and a single stop amid hundreds of routine cron-driven
+service events, is a strong candidate for further investigation. This
+exact pair is the exfiltration service confirmed by the attack labels.
+
+% =========================================================================
+\subsection{Advanced Queries}
+% =========================================================================
+
+\subsubsection{A1 (Ishaan): Distinct event types touching labeled hosts (Subquery)}
+\textbf{Category.} Subquery (\texttt{EXISTS}).\\
+\textbf{Question.} Which audit event types appear on hosts that have at
+least one labeled log line?
+\begin{lstlisting}[language=SQL]
+SELECT DISTINCT e.type
+FROM audit_event e
+WHERE EXISTS (
+  SELECT 1
+  FROM host h
+  JOIN labeled_line ll ON ll.source_host = h.host_key
+  WHERE h.host_id = e.host_id
+);
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a1_result.png
+\textbf{Insight.} % TBD ishaan: confirms which event types coexist with
+% the attack-labeled lines.
+
+% -------------------------------------------------------------------------
+\subsubsection{A2 (River): Cross-host distribution of labeled lines (multi-CTE + CROSS JOIN)}
+\textbf{Category.} CTE.\\
+\textbf{Question.} What share of labeled lines comes from each
+(host, log) pair?
+
+\begin{lstlisting}[language=SQL]
+WITH per_source AS (
+    SELECT source_host, source_log, COUNT(*) AS line_count
+    FROM labeled_line
+    GROUP BY source_host, source_log
+),
+total AS (
+    SELECT SUM(line_count) AS total_count FROM per_source
+)
+SELECT ps.source_host,
+       ps.source_log,
+       ps.line_count,
+       ROUND(100.0 * ps.line_count / t.total_count, 2)
+         AS pct_of_all_labeled
+FROM per_source ps
+CROSS JOIN total t
+ORDER BY ps.line_count DESC;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a2_result.png
+\textbf{Insight.} % TBD river: shows the long-tail concentration.
+
+% -------------------------------------------------------------------------
+\subsubsection{A3 (Ishaan): Busiest day per host (Window function)}
+\textbf{Category.} Window function (\texttt{RANK}~\texttt{OVER PARTITION}).\\
+\textbf{Question.} On what day did each host generate the most events?
+
+\begin{lstlisting}[language=SQL]
+SELECT h.host_key,
+       DATE(e.timestamp) AS event_date,
+       COUNT(*) AS events_that_day,
+       RANK() OVER (
+           PARTITION BY h.host_key
+           ORDER BY COUNT(*) DESC
+       ) AS day_rank_for_host
+FROM audit_event e
+JOIN host h ON h.host_id = e.host_id
+GROUP BY h.host_key, DATE(e.timestamp)
+ORDER BY h.host_key, day_rank_for_host, event_date;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a3_result.png
+\textbf{Insight.} % TBD ishaan: daily concentration on the attack day.
+
+% -------------------------------------------------------------------------
+\subsubsection{A4 (Naman): Privilege-escalation reconstruction (CTE + window + 6-table join)}
+\textbf{Category.} CTE + Window + Multi-table join ($\geq 3$ tables).\\
+\textbf{Question.} Can we reconstruct the exact privilege-escalation
+attack sequence on \texttt{intranet\_server}?
+
+\begin{lstlisting}[language=SQL]
+WITH attack_timeline AS (
+    SELECT ae.event_id,
+           ae.timestamp,
+           ae.type AS audit_type,
+           am.op   AS pam_operation,
+           am.acct AS target_account,
+           am.exe  AS executable,
+           am.terminal,
+           al.label_name,
+           ap.phase_name
+    FROM audit_event ae
+    JOIN host h          ON h.host_id = ae.host_id
+    JOIN labeled_line ll ON ll.source_host = h.host_key
+                        AND ll.source_log  = 'audit.log'
+                        AND ll.line_number = ae.line_number
+    JOIN labeled_line_label lll ON lll.labeled_line_id = ll.labeled_line_id
+    JOIN attack_label al ON al.label_id = lll.label_id
+    JOIN attack_phase ap ON ap.phase_id = al.phase_id
+    LEFT JOIN audit_message am ON am.event_id = ae.event_id
+    WHERE h.host_key = 'intranet_server'
+)
+SELECT event_id, timestamp, audit_type, pam_operation,
+       target_account, executable, terminal,
+       string_agg(label_name, ', ' ORDER BY label_name) AS labels
+FROM attack_timeline
+GROUP BY event_id, timestamp, audit_type, pam_operation,
+         target_account, executable, terminal
+ORDER BY timestamp, event_id;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a4_result.png
+\textbf{Insight.} The query returns nine rows that decompose into two
+distinct attack bursts: at 04:37:40 UTC, a \texttt{su} from
+\texttt{www-data} to \texttt{jhall} via \texttt{/bin/su} (four events);
+then at 04:38:06 UTC, \texttt{sudo cat /etc/shadow} via
+\texttt{/usr/bin/sudo} (five events), 25.6 seconds later. The
+reconstruction is only possible because audit events, host inventory,
+and attack labels live in the same database with cross-domain foreign
+keys.
+
+% -------------------------------------------------------------------------
+\subsubsection{A5 (Naman): Detection-rule effectiveness (CTE + window)}
+\textbf{Category.} CTE + Window function (\texttt{DENSE\_RANK}).\\
+\textbf{Question.} Which detection rules are most effective at
+identifying attacker activity?
+
+\begin{lstlisting}[language=SQL]
+WITH rule_stats AS (
+    SELECT llr.rule_name,
+           ap.phase_name,
+           COUNT(DISTINCT llr.labeled_line_id) AS lines_triggered,
+           COUNT(DISTINCT llr.label_id)        AS labels_triggered
+    FROM labeled_line_rule llr
+    JOIN attack_label al ON al.label_id = llr.label_id
+    JOIN attack_phase ap ON ap.phase_id = al.phase_id
+    GROUP BY llr.rule_name, ap.phase_name
+)
+SELECT rule_name,
+       phase_name,
+       lines_triggered,
+       labels_triggered,
+       DENSE_RANK() OVER (ORDER BY lines_triggered DESC)
+         AS effectiveness_rank
+FROM rule_stats
+ORDER BY lines_triggered DESC
+LIMIT 15;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a5_result.png
+\textbf{Insight.} \texttt{dnsteal.domain.match} is rank 1 with $\sim 53$K
+lines, which corresponds to the DNS-tunneling exfiltration phase.
+Audit-based rules rank much lower by raw volume but they are the only
+ones that catch the privilege-escalation phase. Volume-based ranking is
+not a substitute for kill-chain coverage.
+
+% -------------------------------------------------------------------------
+\subsubsection{A6 (Naman): Lateral-movement timeline (CTE + 6-table join)}
+\textbf{Category.} CTE + Multi-table join ($\geq 3$ tables).\\
+\textbf{Question.} Can we trace the attacker's movement \emph{across}
+hosts?
+
+\begin{lstlisting}[language=SQL]
+WITH labeled_audit AS (
+    SELECT h.host_key,
+           ae.timestamp,
+           ae.type AS audit_type,
+           am.acct AS target_account,
+           am.exe  AS executable,
+           am.unit AS service_unit,
+           ap.phase_name,
+           string_agg(al.label_name, ', ' ORDER BY al.label_name) AS labels
+    FROM audit_event ae
+    JOIN host h          ON h.host_id = ae.host_id
+    JOIN labeled_line ll ON ll.source_host = h.host_key
+                        AND ll.source_log  = 'audit.log'
+                        AND ll.line_number = ae.line_number
+    JOIN labeled_line_label lll ON lll.labeled_line_id = ll.labeled_line_id
+    JOIN attack_label al ON al.label_id = lll.label_id
+    JOIN attack_phase ap ON ap.phase_id = al.phase_id
+    LEFT JOIN audit_message am ON am.event_id = ae.event_id
+    GROUP BY h.host_key, ae.timestamp, ae.type,
+             am.acct, am.exe, am.unit, ap.phase_name
+)
+SELECT host_key, timestamp, audit_type, phase_name, labels,
+       COALESCE(target_account, service_unit, '(n/a)') AS target_detail,
+       executable
+FROM labeled_audit
+ORDER BY timestamp, host_key;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a6_result.png
+\textbf{Insight.} The query returns 11 rows across two hosts. At
+04:37--04:38 UTC, \texttt{intranet\_server} shows
+privilege-escalation activity. At 13:50 UTC, \texttt{internal\_share}
+shows exfiltration activity (the \texttt{put} service from query B6).
+The two bursts are roughly nine hours apart, on two different machines:
+the database makes the lateral movement legible in a single ordering.
+
+% -------------------------------------------------------------------------
+\subsubsection{A7 (Naman): Burst detection via timing (CTE + LAG window function)}
+\textbf{Category.} CTE + Window function (\texttt{LAG},
+\texttt{ROW\_NUMBER}).\\
+\textbf{Question.} Can we identify distinct attack bursts from purely
+temporal patterns, without relying on any label?
+
+\begin{lstlisting}[language=SQL]
+WITH labeled_audit_events AS (
+    SELECT ae.event_id, ae.timestamp, ae.type,
+           ROW_NUMBER() OVER (ORDER BY ae.timestamp,
+                                       ae.line_number) AS seq,
+           LAG(ae.timestamp) OVER (ORDER BY ae.timestamp,
+                                            ae.line_number) AS prev_timestamp
+    FROM audit_event ae
+    JOIN host h          ON h.host_id = ae.host_id
+    JOIN labeled_line ll ON ll.source_host = h.host_key
+                        AND ll.source_log  = 'audit.log'
+                        AND ll.line_number = ae.line_number
+    WHERE h.host_key = 'intranet_server'
+)
+SELECT seq, timestamp, type,
+       EXTRACT(EPOCH FROM timestamp - prev_timestamp)
+         AS seconds_since_prev,
+       CASE
+           WHEN prev_timestamp IS NULL THEN 'FIRST EVENT'
+           WHEN EXTRACT(EPOCH FROM timestamp - prev_timestamp) > 10
+                THEN 'NEW BURST'
+           ELSE 'continuation'
+       END AS burst_indicator
+FROM labeled_audit_events
+ORDER BY seq;
+\end{lstlisting}
+% TODO: insert result snapshot at figures/q_a7_result.png
+\textbf{Insight.} Two distinct bursts emerge purely from the gap between
+consecutive timestamps. Burst 1 (events 1-4): all \texttt{su} steps
+within 24 milliseconds of each other. Burst 2 (events 5-9): the sudo
+chain, starting 25.6 seconds after the previous event. Without ever
+querying the label table, the timing alone identifies two attack
+phases.
+
+% =========================================================================
+\subsection{Performance: Indexing and EXPLAIN}
+\label{sec:explain}
+% =========================================================================
+
+The most expensive query in our portfolio is A6 (lateral-movement
+timeline): six joins, including the cross-domain join from
+\texttt{audit\_event.line\_number} to
+\texttt{labeled\_line.line\_number} via the natural-key triple
+(\texttt{source\_host}, \texttt{source\_log}, \texttt{line\_number}).
+Without an index on \texttt{labeled\_line(source\_host, source\_log,
+line\_number)}, PostgreSQL must scan the full 61{,}862-row
+\texttt{labeled\_line} table for each candidate \texttt{audit\_event}.
+
+\subsubsection{Baseline}
+\begin{lstlisting}[language=SQL]
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+WITH labeled_audit AS ( ... )    -- query A6 inlined
+SELECT ... FROM labeled_audit ORDER BY timestamp, host_key;
+\end{lstlisting}
+% TODO: insert figures/explain_before.png
+\textbf{Observed plan (before index).} % TBD naman: paste planning time,
+% execution time, and the offending Seq Scan node from EXPLAIN ANALYZE.
+
+\subsubsection{Index Definition}
+The index lives in \texttt{sql/3nf/\_indexes.sql} and is a covering
+B-tree on the natural key:
+
+\begin{lstlisting}[language=SQL]
+CREATE INDEX IF NOT EXISTS
+  idx_labeled_line_source_log_line_number
+ON labeled_line (source_host, source_log, line_number);
+\end{lstlisting}
+
+\subsubsection{After Index}
+\begin{lstlisting}[language=SQL]
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+WITH labeled_audit AS ( ... )    -- same query
+SELECT ... FROM labeled_audit ORDER BY timestamp, host_key;
+\end{lstlisting}
+% TODO: insert figures/explain_after.png
+\textbf{Observed plan (after index).} % TBD naman: planning + execution
+% time, and the new Index Scan node.
+
+\textbf{Discussion.} % TBD naman: 1-2 sentences on the speedup factor.
+The textbook expectation is that the new index turns a sequential scan
+into an index lookup, dropping the relevant inner-loop cost roughly
+linearly with table size.
+
+% =========================================================================
+\subsection{Persisted View}
+% =========================================================================
+
+The investigation pattern from queries A4 and A6 (joining audit events,
+host inventory, and attack labels into a single attack-timeline row set)
+recurs across the dashboard and the report. We persist it as a
+\textsc{view} so it can be queried by simple \texttt{SELECT *} from the
+dashboard layer:
+
+\begin{lstlisting}[language=SQL]
+CREATE OR REPLACE VIEW v_attack_timeline AS
+SELECT h.host_key,
+       ae.timestamp,
+       ae.type            AS audit_type,
+       am.acct            AS target_account,
+       am.exe             AS executable,
+       am.unit            AS service_unit,
+       ap.phase_name,
+       string_agg(al.label_name, ', '
+                  ORDER BY al.label_name)  AS labels
+FROM audit_event ae
+JOIN host h          ON h.host_id     = ae.host_id
+JOIN labeled_line ll ON ll.source_host = h.host_key
+                    AND ll.source_log  = 'audit.log'
+                    AND ll.line_number = ae.line_number
+JOIN labeled_line_label lll ON lll.labeled_line_id = ll.labeled_line_id
+JOIN attack_label al ON al.label_id = lll.label_id
+JOIN attack_phase ap ON ap.phase_id = al.phase_id
+LEFT JOIN audit_message am ON am.event_id = ae.event_id
+GROUP BY h.host_key, ae.timestamp, ae.type,
+         am.acct, am.exe, am.unit, ap.phase_name;
+\end{lstlisting}
+
+The view is committed to \texttt{sql/3nf/\_views.sql} and is referenced
+by the dashboard charts in Section~\ref{sec:dashboard}.
+
+\subsection{Category Coverage}
+Table \ref{tab:categories} maps each query to the rubric category it
+demonstrates. Five of the six rubric categories are represented; the
+sixth (\textsc{set operations}) was not needed for any analytical
+question and we did not force a synthetic example.
+
+\begin{table}[htbp]
+\caption{Query-to-category mapping.}
+\label{tab:categories}
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Category} & \textbf{Queries} & \textbf{Count} \\
+\midrule
+Subqueries           & A1                                   & 1 \\
+CTEs                 & A2, A4, A5, A6, A7                   & 5 \\
+Window functions     & A3, A4, A5, A7                       & 4 \\
+Multi-table join (\(\geq 3\)) & B6, A4, A6, persisted view  & 4 \\
+Indexing / EXPLAIN   & Section~\ref{sec:explain}            & 1 \\
+Views                & \texttt{v\_attack\_timeline}         & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
