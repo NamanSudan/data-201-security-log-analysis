@@ -1,87 +1,250 @@
 \section{Interactive Dashboard}
 \label{sec:dashboard}
 
-The dashboard exposes the queries in Section~\ref{sec:sql} to a non-SQL
-audience. It is a Streamlit \cite{streamlit} application that connects
-directly to the PostgreSQL database described in Section~\ref{sec:dbsetup}
-and renders results with Plotly \cite{plotly}. All charts are
-parameterized by sidebar filters; selecting a host or attack phase
-re-issues the underlying SQL and updates every chart on the page.
+The dashboard exposes the queries in Section~\ref{sec:sql} to a
+non-SQL audience. It is a Streamlit \cite{streamlit} application that
+connects directly to the PostgreSQL database described in
+Section~\ref{sec:dbsetup} and renders results with Plotly Express
+\cite{plotly}. The single page combines a filter-driven KPI band on
+top with eight canonical story panels below, for a total of nine
+visualizations bound to the SQL portfolio.
 
 \subsection{Architecture}
-The application is a single-page Streamlit app structured as:
+The application is two Python modules under \texttt{src/dashboard/}
+plus the SQL files it reads at render time:
 
-\begin{verbatim}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, frame=none, language={}]
 src/dashboard/
-|-- app.py        Streamlit entry point, layout, charts
-|-- db.py         psycopg2 connection helper
-`-- queries.py    parameterized SQL strings
-\end{verbatim}
+|-- app.py   layout + KPI band + 8 story panels
+`-- db.py    SQLAlchemy engine + .env-driven URL
+\end{lstlisting}
 
-The runtime path on every page render is: user input on the sidebar
-$\rightarrow$ Streamlit re-runs \texttt{app.py} $\rightarrow$
-\texttt{queries.py} produces a parameterized \texttt{SELECT}
-$\rightarrow$ \texttt{db.py} executes against PostgreSQL $\rightarrow$
-result returned as a Pandas DataFrame $\rightarrow$ Plotly figure
-constructed and rendered. This mirrors the Lecture-11 Flask + PyMySQL +
-Chart.js pattern, with Streamlit + psycopg2 + Plotly substituted for the
-equivalent layers.
+\texttt{db.py} loads the repository-root \texttt{.env}, prefers an
+explicit \texttt{DATABASE\_URL}, and falls back to assembling the URL
+from \texttt{DB\_USER}, \texttt{DB\_PASSWORD}, \texttt{DB\_HOST},
+\texttt{DB\_PORT}, and \texttt{DB\_NAME}. The engine is cached with
+\texttt{functools.lru\_cache} so repeated Streamlit reruns reuse a
+single connection pool. \texttt{run\_sql} executes a SQL string and
+\texttt{run\_sql\_file} reads a \texttt{.sql} file from disk and
+executes it. Both return a Pandas DataFrame.
 
-\subsection{Visualizations}
-Eight charts are wired to the database. Each chart is bound to a single
-SQL query (or the persisted view in Section~\ref{sec:sql}) and the
-caption names the source query so the linkage to the SQL portfolio is
-explicit.
-
-\begin{enumerate}
-  \item Bar chart: labeled lines per host. Source: B1. % River
-  \item Bar chart: labels per attack phase. Source: B4. % Ishaan
-  \item Horizontal bar: top-10 detection rules. Source: B5. % Ishaan
-  \item Heatmap: events per day per host with rank highlight.
-    Source: A3. % Ishaan
-  \item Stacked bar: \texttt{(source\_host, source\_log)} share of
-    labeled lines. Source: A2. % River
-  \item Service-activity table with sparklines. Source: B6. % Naman
-  \item Filterable attack timeline. Source: persisted view
-    \texttt{v\_attack\_timeline}. % Naman
-  \item Phase-vs-source coverage heatmap. Source: B-Naman-Q2 (4-table
-    join with \texttt{COUNT DISTINCT}).
-\end{enumerate}
+\texttt{app.py} declares the layout, the sidebar filters, the KPI
+band, and the eight story panels. Story panels read their SQL by
+calling \texttt{run\_sql\_file()} against the same canonical
+\path{sql/queries/advanced/*.sql} files documented in
+Section~\ref{sec:sql}, so the chart and the report cite the same
+source-of-truth query. The runtime path on every page render is:
+sidebar input $\rightarrow$ Streamlit reruns \texttt{app.py}
+$\rightarrow$ \texttt{db.py} returns the engine $\rightarrow$
+\texttt{run\_sql\_file()} executes the canonical query
+$\rightarrow$ Plotly figure rendered.
 
 \subsection{Filters}
-The sidebar exposes two filters:
+The sidebar exposes three filters, all multi-select, with story-canon
+defaults that reproduce the narrative described in
+Section~\ref{sec:introduction}:
 \begin{itemize}
-  \item \texttt{host\_key} (multi-select, default = all 22 hosts).
-  \item \texttt{attack\_phase} (multi-select, default = all 7 phases).
+  \item \texttt{Host} (multi-select, default \texttt{intranet\_server}).
+  \item \texttt{Attack phase} (multi-select, default
+    \texttt{initial\_access}, \texttt{privilege\_escalation}).
+  \item \texttt{Source log} (multi-select, default empty
+    interpreted as ``include every log'').
 \end{itemize}
-Both filters are applied as \texttt{WHERE} clauses on the
-\texttt{host} and \texttt{attack\_phase} joins. Charts that do not
-depend on those joins (B2: phase taxonomy) ignore the filter value
-gracefully.
+A filter set to ``empty'' is treated as ``no constraint''
+(\texttt{eff\_hosts = selected\_hosts or all\_hosts}). The KPI band
+responds to all three filters via \texttt{IN :hosts/:phases/:logs}
+\texttt{bindparam} expansions; the story panels stay fixed to the
+canonical narrative so the audience can read the same chart shape on
+every visit.
+
+\subsection{Filter-Driven KPI Band (Panel 0)}
+The first section of the page renders four KPI cards using
+\texttt{st.metric}. The two underlying queries are inline against
+\texttt{labeled\_line}, \texttt{labeled\_line\_label},
+\texttt{attack\_label}, \texttt{attack\_phase}, \texttt{audit\_event},
+and \texttt{host}.
+
+\begin{table}[htbp]
+\caption{KPI band default values (filters: host
+\texttt{intranet\_server}, phases \texttt{initial\_access} and
+\texttt{privilege\_escalation}, all source logs).}
+\label{tab:kpi-defaults}
+\centering
+\begin{tabular}{lr}
+\toprule
+\textbf{KPI} & \textbf{Default value} \\
+\midrule
+Labeled lines           & 7{,}748 \\
+Distinct attack labels  & 6 \\
+Source logs touched     & 4 \\
+Audit events on host    & 9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The four-card layout (\texttt{st.columns(4)}) makes the KPIs the first
+thing the audience sees. The ``audit events on host'' card is
+deliberately the smallest number on the page: it is the size of the
+nine-event chain captured by query A4 and the saved view. The other
+three KPIs frame the breadth context for that small number.
+
+\subsection{Story Panels (Panels 1 to 8)}
+Each story panel is named for its position in the page (1 to 8), is
+bound to a single SQL file, and carries an in-app caption that names
+the file path so a viewer can inspect the source. Table~\ref{tab:panels}
+summarizes the eight story panels.
+
+\begin{table}[htbp]
+\caption{Story panel inventory (panels 1 to 8). Together with the
+filter-driven KPI band (panel 0), the dashboard exposes nine
+visualizations.}
+\label{tab:panels}
+\centering
+\begin{tabular}{rll}
+\toprule
+\textbf{\#} & \textbf{Panel} & \textbf{SQL source} \\
+\midrule
+1 & Foothold-to-escalate journey         & A11 (NTILE bar)               \\
+2 & Foothold accumulation                & A12 (cumulative line + bar)   \\
+3 & Privilege-escalation timeline        & view (9-row table)            \\
+4 & Where else does the attack appear    & A13 (horizontal bar)          \\
+5 & Detection rules ranked               & A14 (DENSE\_RANK bar)         \\
+6 & Audit event types touched            & A8 (metric tiles)             \\
+7 & Busiest audit day on intranet\_server & A9 (RANK bar, attack day red) \\
+8 & Index improvement                    & static EXPLAIN summary        \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Panel 1, Foothold-to-Escalate Journey}
+Stacked bar chart over three NTILE thirds of
+\texttt{intranet\_server/access.log.2}, coloured by attack phase
+(\texttt{initial\_access} and \texttt{privilege\_escalation}). Source:
+\path{river_foothold_to_escalate_journey.sql} (A11). The
+chart shows where on the log the foothold density sits and at which
+third the privilege-escalation evidence appears.
+
+\subsubsection{Panel 2, Foothold Accumulation}
+Step-curve line plus a per-bucket bar overlay over 1{,}000-line
+buckets of \texttt{access.log.2}. Source:
+\path{river_foothold_cumulative.sql} (A12). The cumulative
+axis climbs to roughly 7{,}691 by the final bucket.
+
+\subsubsection{Panel 3, Privilege-Escalation Timeline}
+Nine-row table read from the saved view
+\texttt{v\_privilege\_escalation\_timeline} via
+\path{naman_view_privilege_escalation_timeline.sql} (see
+Section~\ref{sec:view}). The display shows host, timestamp, audit
+type, PAM op, target account, executable, terminal, the aggregated
+label list, and the aggregated rule list.
+
+\subsubsection{Panel 4, Where Else Does the Attack Appear}
+Horizontal bar chart of the five
+\texttt{(source\_host, source\_log)} pairs that observe the
+\texttt{privilege\_escalation} phase, ranked by labeled-line count.
+Source: \path{river_priv_esc_source_spread.sql} (A13). The
+chart makes the breadth-of-coverage point: the same 82-line phase
+appears on five logs across three hosts.
+
+\subsubsection{Panel 5, Detection Rules Ranked}
+Horizontal bar chart of detection rules that fire inside the
+\texttt{privilege\_escalation} phase, ordered by
+\texttt{lines\_triggered} (\texttt{DENSE\_RANK}). Source:
+\path{naman_rule_effectiveness_priv_esc.sql} (A14).
+
+\subsubsection{Panel 6, Audit Event Types Touched}
+Metric-chip layout (\texttt{st.metric} per type) listing the eight
+distinct \texttt{audit\_event.type} values that fire on the
+privilege-escalation chain (\texttt{CRED\_ACQ}, \texttt{CRED\_DISP},
+\texttt{CRED\_REFR}, \texttt{USER\_ACCT}, \texttt{USER\_AUTH},
+\texttt{USER\_CMD}, \texttt{USER\_END}, \texttt{USER\_START}).
+Source:
+\path{ishaan_audit_types_in_privilege_escalation.sql} (A8).
+
+\subsubsection{Panel 7, Busiest Audit Day on \texttt{intranet\_server}}
+Categorical bar chart of audit events per day on
+\texttt{intranet\_server}, with the attack day (2022-01-24)
+highlighted in red. Source:
+\path{ishaan_intranet_server_busiest_day.sql} (A9). The
+attack day carries 565 audit events and ranks 3 of 4 days by raw
+volume on the host. The chart makes the ``hides in baseline''
+interpretation visible: the privilege-escalation chain fires on a day
+that is not even the noisiest, so a volume-only outlier detector
+would never flag it.
+
+\subsubsection{Panel 8, Index Improvement Summary}
+Two-up layout: a small bar chart contrasting before- and after-index
+execution times, paired with a markdown summary of the speedup. The
+underlying numbers are static (the EXPLAIN evidence captured
+2026-05-01 from
+\path{naman_explain_index_improvement.sql}, summarised in
+Section~\ref{sec:explain}): 1.462~ms to 0.640~ms, Seq Scan to Index
+Scan, buffers 141 to 33, planner cost 171.22 to 24.79.
+
+\subsection{Run Steps}
+After the load steps in Section~\ref{sec:dbsetup} have completed and
+the \texttt{security-logs-dev} container is healthy on port 5432:
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, frame=single]
+source venv/bin/activate
+venv/bin/streamlit run src/dashboard/app.py
+\end{lstlisting}
+
+The dashboard opens at \texttt{http://localhost:8501}. With the
+default filters applied, the four KPI cards read 7{,}748 labeled
+lines, 6 distinct labels, 4 source logs touched, and 9 audit events
+on host. The eight story panels render below, top to bottom, in the
+order shown in Table~\ref{tab:panels}.
 
 \subsection{Demo}
-% TODO: insert figures/dashboard_overview.png
-% TODO: insert figures/dashboard_filter_demo.png
-Figure \ref{fig:dashboard-overview} shows the default view. Figure
-\ref{fig:dashboard-filter} shows the same dashboard after filtering to
-\texttt{intranet\_server} only, which collapses charts 1, 4, 6, 7, and 8
-to the privilege-escalation evidence on a single host. The dashboard
-runs locally with \texttt{streamlit run src/dashboard/app.py} after the
-load steps in Section~\ref{sec:dbsetup}.
+Figure~\ref{fig:dashboard-overview} shows the top of the dashboard
+with the story-canon filter defaults applied:
+\texttt{Host = intranet\_server},
+\texttt{Phases = initial\_access + privilege\_escalation}, source log
+empty (the app interprets that as all logs). The KPI band reports
+7{,}748 labeled lines, 6 distinct attack labels, 4 source logs touched,
+and 9 audit events on host. The remaining seven panels are reproduced
+in Appendix~\ref{app:dashboard-panels} (Figures
+\ref{fig:dash-part2} to \ref{fig:dash-part5}).
+
+Figure~\ref{fig:dashboard-filter} shows the same dashboard after the
+user clears the Host filter. The app interprets an empty Host
+selection as ``all hosts,'' and the phase and source-log filters stay
+on the story-canon defaults. The KPI band rebalances: labeled lines
+rise from 7{,}748 to 8{,}806, distinct attack labels rise from 6 to 7,
+source logs touched rise from 4 to 7. The ``audit events on host''
+metric stays at 9 because \texttt{intranet\_server} is the only host
+that carries audit-domain evidence under the privilege-escalation
+phase; widening the host scope does not surface new audit events for
+that phase. The story panels stay anchored to the canonical narrative
+on \texttt{intranet\_server}.
+
+Note that adding \texttt{internal\_share} to the host filter while the
+phase filter remains at \texttt{initial\_access + privilege\_escalation}
+does not change any KPI value: \texttt{internal\_share} carries
+exfiltration-phase evidence, which the default phase filter excludes.
+The host's contribution to the KPI band only surfaces if the user adds
+the \texttt{exfiltration} phase to the phase filter.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{figures/dashboard_overview.png}
-\caption{Dashboard default view, no filters applied. Eight charts wired
-  to the queries in Section~\ref{sec:sql}.}
+\caption{Dashboard top section with story-canon defaults applied
+(\texttt{Host = intranet\_server},
+\texttt{Phases = initial\_access + privilege\_escalation}). KPI band:
+7{,}748 / 6 / 4 / 9. Panels 2 to 8 are in
+Appendix~\ref{app:dashboard-panels}.}
 \label{fig:dashboard-overview}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{figures/dashboard_filter_demo.png}
-\caption{Dashboard after filtering to \texttt{intranet\_server}. Charts
-  1, 4, 6, 7, and 8 update; charts 2, 3, and 5 (taxonomy / global
-  detection-rule volume) are intentionally invariant.}
+\caption{Dashboard with the Host filter cleared so the app falls back
+to all 22 hosts; phases stay at
+\texttt{initial\_access + privilege\_escalation}. KPI band:
+8{,}806 / 7 / 7 / 9. Audit events on host stays at 9 because only
+\texttt{intranet\_server} carries audit-domain evidence under the
+selected phases.}
 \label{fig:dashboard-filter}
 \end{figure}
