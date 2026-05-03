@@ -10,8 +10,6 @@ section summarizes the design rationale.
 
 \begin{figure*}[htbp]
   \centering
-  % TODO: export docs/er_diagrams/combined_eer_3nf_v1.drawio.xml to PDF
-  % and place at report/figures/eer_3nf_combined.pdf
   \includegraphics[width=0.95\textwidth]{figures/eer_3nf_combined.pdf}
   \caption{Final 3NF EER schema: 22 tables across host inventory (7),
     audit events (10), and attack labels (5) domains. Surrogate primary
@@ -32,7 +30,7 @@ dependency
 \{\texttt{distribution}, \texttt{distribution\_version}\}
 is removed by the 3NF lookup table \texttt{os\_release} (2 rows: bionic
 and stretch). The \texttt{logs} composite multi-valued field becomes
-\texttt{host\_log\_config} (66 rows, 1--9 configs per host).
+\texttt{host\_log\_config} (66 rows, 1 to 9 configs per host).
 
 \subsection{Domain 2: Audit Events (10 tables)}
 The audit domain demonstrates supertype/subtype decomposition. The
@@ -100,5 +98,21 @@ applications of the normalization algorithm:
     and the column is unused by the queries in Section \ref{sec:sql}.
 \end{enumerate}
 
-% TBD optional: a short proof-style paragraph showing that no remaining
-% transitive dependencies exist (i.e., the 3NF claim). Optional polish.
+\subsection{3NF Claim}
+For each non-key attribute in every relation, we verified that the
+attribute depends only on the primary key (no partial dependencies, as
+all primary keys are atomic SERIAL surrogates) and that it does not
+transitively depend on another non-key attribute. The two textbook
+candidates for transitive dependency in the source data
+(\texttt{distribution\_release} $\rightarrow$ \texttt{distribution},
+\texttt{distribution\_version}) and the lookup-style relationship
+(\texttt{label\_name} $\rightarrow$ \texttt{phase\_name}) are removed
+by promoting them into separate lookup tables (\texttt{os\_release}
+and \texttt{attack\_phase}, respectively). The one
+documented exception is \texttt{host\_log\_config.add\_field\_json},
+which is a TEXT blob carrying log-type-specific configuration values.
+We treat the column as opaque (queried only with PostgreSQL JSON
+functions when needed) rather than synthesizing a polymorphic child
+table. The exception is documented in
+\texttt{docs/schema/data\_model\_3nf.md} and the column is unused by
+any query in Section~\ref{sec:sql}.
