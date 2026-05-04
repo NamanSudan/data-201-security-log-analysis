@@ -74,7 +74,7 @@ Analysis of a simulated enterprise network under attack using the Austrian Insti
 
 ## Streamlit Dashboard
 
-Single-page dashboard that tells the privilege-escalation-on-`intranet_server` story across nine panels (KPI cards, seven story panels, one static EXPLAIN/index summary). Reads directly from PostgreSQL using the same connection settings the loaders use.
+Single-page dashboard that tells the privilege-escalation-on-`intranet_server` story across nine panels (KPI cards, seven story panels, one static EXPLAIN/index summary). Panels 3, 6, and 8 each combine multiple views (chart plus table, chart plus chips, and chart plus workload-query reference). Reads directly from PostgreSQL using the same connection settings the loaders use.
 
 ### Prerequisites
 - Steps 1 to 5 of Quick Start completed (Docker container `security-logs-dev` healthy on port 5432, Alembic at head, Python deps installed).
@@ -100,12 +100,12 @@ If `streamlit.exe` is not on `PATH` after activation, fall back to `python -m st
 - **Filtered key counts**: `Labeled lines = 7,748`, `Distinct attack labels = 6`, `Source logs touched = 4`, `Audit events on host = 9` (with default filters).
 - **1. Foothold-to-escalate journey on access.log.2** (NTILE bar)
 - **2. Foothold accumulation across access.log.2** (cumulative line + per-bucket bars)
-- **3. Privilege escalation timeline (su then sudo)** (9-row table from `v_privilege_escalation_timeline`)
+- **3. Privilege escalation timeline (su then sudo)** (time scatter of the 9 events plus the underlying 9-row table from `v_privilege_escalation_timeline`)
 - **4. Where else does the attack leave traces** (5-row source spread bar)
 - **5. Detection rules ranked by lines triggered** (10-row horizontal bar)
-- **6. Audit event types touched by the chain** (8 metric chips)
+- **6. Audit event types touched by the chain** (per-type event-count bar plus 8 metric chips)
 - **7. Busiest audit day on intranet_server** (4-day categorical bar, attack day highlighted)
-- **8. Index improvement on the incident-response query** (1.462 ms to 0.640 ms before/after bar + summary table)
+- **8. Index improvement on the incident-response query** (1.462 ms to 0.640 ms before/after bar, summary table, and a collapsible workload-query reference)
 
 ### Troubleshooting
 - "Could not connect to PostgreSQL" banner: confirm `docker compose ps` shows `security-logs-dev` healthy and that `.env` is in the repo root.

@@ -4,7 +4,7 @@
 \subsection{Source}
 We use the \emph{russellmitchell} testbed slice of the AIT Log Data Set V2.0
 (AIT-LDSv2.0) \cite{landauer2022maintainable, ait2024dataset}. The corpus
-simulates a four-day attack window (January 21--25, 2022, UTC) on a 22-host
+simulates a four-day attack window (January 21 to 25, 2022, UTC) on a 22-host
 enterprise network running a mix of Ubuntu and Debian distributions. The
 dataset is publicly available under a permissive research license at the
 URL given in the bibliography entry.
@@ -61,5 +61,35 @@ address explicitly during ETL (Section \ref{sec:dbsetup}):
     push subtype-specific attributes out of the supertype.
 \end{enumerate}
 
-% TBD: optional stat block (date range histogram, lines/host bar) if you
-% want a figure here. Not required by the rubric.
+\subsection{Coverage Summary}
+Table~\ref{tab:source-coverage} groups the eight \texttt{russellmitchell}
+source files by host and gives the labeled-line count and the dominant
+attack phase recorded against each one. The table makes the
+foothold-to-escalate story on \texttt{intranet\_server} visible at a
+glance, and reminds the reader that the exfiltration evidence on
+\texttt{internal\_share} also belongs to the same attack chain even
+though it lives on a different host.
+
+\begin{table}[htbp]
+\caption{Labeled-line coverage by source file. The first six rows are the
+audit and host-side evidence; the final row is the bulk DNS-tunneling
+channel that drives the corpus-wide line count.}
+\label{tab:source-coverage}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrl}
+\toprule
+\textbf{Host} & \textbf{Source log} & \textbf{Lines} & \textbf{Dominant phase} \\
+\midrule
+intranet\_server & access.log.2 & 7{,}691           & initial\_access \\
+intranet\_server & auth.log     & 8                 & privilege\_escalation \\
+intranet\_server & audit.log    & 9                 & privilege\_escalation \\
+internal\_share  & audit.log    & 2                 & exfiltration \\
+inet-firewall    & dnsmasq.log  & 12                & privilege\_escalation \\
+monitoring       & cpu.log      & 49                & privilege\_escalation \\
+\midrule
+internal\_share  & dns.log      & $\approx$53{,}000 & exfiltration \\
+\bottomrule
+\end{tabular}
+\end{table}

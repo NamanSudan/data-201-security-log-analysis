@@ -312,6 +312,44 @@ st.caption(
     "`sql/queries/advanced/naman_view_privilege_escalation_timeline.sql`."
 )
 timeline_df = run_sql_file(engine, f"{SQL_DIR}/naman_view_privilege_escalation_timeline.sql")
+
+# Time-based view of the chain. Each event sits in its own audit_type
+# lane on the y-axis with its real timestamp on the x-axis, so the two
+# bursts (su at 04:37:40 to jhall, sudo at 04:38:06 to root) read as
+# two clusters separated by the 25.6 second gap.
+chain_plot_df = timeline_df.copy()
+for col in ("target_account", "executable", "pam_operation"):
+    chain_plot_df[col] = chain_plot_df[col].fillna("(unset)").replace({"": "(unset)"})
+y_order = chain_plot_df.sort_values("timestamp")["audit_type"].drop_duplicates().tolist()
+fig_chain = px.scatter(
+    chain_plot_df,
+    x="timestamp",
+    y="audit_type",
+    color="target_account",
+    symbol="executable",
+    hover_data=["pam_operation", "terminal", "labels", "rules"],
+    category_orders={"audit_type": y_order},
+    labels={
+        "timestamp": "Event timestamp (UTC)",
+        "audit_type": "Audit event type",
+        "target_account": "Target account",
+        "executable": "Executable",
+    },
+)
+fig_chain.update_traces(marker={"size": 14, "line": {"width": 1, "color": "#222"}})
+fig_chain.update_layout(
+    height=380,
+    legend_title_text="Target account / executable",
+    margin={"t": 30, "r": 20, "l": 10, "b": 40},
+)
+st.plotly_chart(fig_chain, width="stretch")
+st.caption(
+    "Burst 1 (`su` to `jhall`) clusters at 04:37:40 with four PAM "
+    "events; burst 2 (`sudo cat /etc/shadow` as `root`) clusters at "
+    "04:38:06 with five events. The 25.6 second gap is visible on the "
+    "x-axis."
+)
+
 timeline_display = timeline_df.copy()
 timeline_display["timestamp"] = pd.to_datetime(timeline_display["timestamp"]).dt.strftime(
     "%Y-%m-%d %H:%M:%S UTC"
@@ -406,22 +444,55 @@ st.divider()
 
 
 # ---------------------------------------------------------------------
-# Section 7: Audit types (ishaan_audit_types_in_privilege_escalation.sql)
+# Section 7: Audit types - chip catalog plus per-type bar chart
+# (ishaan_audit_types_in_privilege_escalation.sql plus
+# ishaan_audit_type_counts_in_privilege_escalation.sql)
 # ---------------------------------------------------------------------
 st.subheader("6. Audit event types touched by the chain")
 st.caption(
-    "Distinct `audit_event.type` values that fire on the same lines "
-    "carrying a `privilege_escalation` label. SQL: "
-    "`sql/queries/advanced/ishaan_audit_types_in_privilege_escalation.sql`."
+    "Per-type event counts on the `privilege_escalation` chain plus "
+    "the distinct-type catalog. SQL: "
+    "`sql/queries/advanced/ishaan_audit_type_counts_in_privilege_escalation.sql` "
+    "for the bar chart, "
+    "`sql/queries/advanced/ishaan_audit_types_in_privilege_escalation.sql` "
+    "for the chip catalog."
 )
+audit_count_df = run_sql_file(
+    engine,
+    f"{SQL_DIR}/ishaan_audit_type_counts_in_privilege_escalation.sql",
+)
+audit_count_sorted = audit_count_df.sort_values("event_count", ascending=False)
+fig_audit_count = px.bar(
+    audit_count_sorted,
+    x="audit_type",
+    y="event_count",
+    text="event_count",
+    color="event_count",
+    color_continuous_scale="Blues",
+    labels={
+        "audit_type": "Audit event type",
+        "event_count": "Events on the privilege_escalation chain",
+    },
+    category_orders={"audit_type": audit_count_sorted["audit_type"].tolist()},
+)
+fig_audit_count.update_traces(textposition="outside", cliponaxis=False)
+fig_audit_count.update_layout(
+    height=360,
+    coloraxis_showscale=False,
+    yaxis={"range": [0, max(int(audit_count_df["event_count"].max()) * 1.4, 3)]},
+    margin={"t": 30},
+)
+st.plotly_chart(fig_audit_count, width="stretch")
+
 audit_types_df = run_sql_file(engine, f"{SQL_DIR}/ishaan_audit_types_in_privilege_escalation.sql")
 type_cols = st.columns(max(len(audit_types_df), 1))
 for col, audit_type in zip(type_cols, audit_types_df["audit_type"], strict=False):
     col.metric("Audit type", audit_type)
 st.caption(
     f"{len(audit_types_df)} distinct audit types fire on the "
-    "privilege_escalation chain (out of all audit_event types defined "
-    "in the kernel taxonomy)."
+    "privilege_escalation chain. `USER_START` fires twice (once at the "
+    "`su` prompt, once at the `sudo` session start); the other types "
+    "fire once each, totalling 9 events on the chain."
 )
 
 st.divider()
@@ -522,6 +593,29 @@ with perf_right:
 """
     )
 st.dataframe(perf_df, width="stretch", hide_index=True)
+
+with st.expander("Show the workload query (incident response zoom)"):
+    st.caption(
+        "Exact `SELECT` measured by the `EXPLAIN ANALYZE` evidence "
+        "above. Source: "
+        "`sql/queries/advanced/naman_explain_index_improvement.sql`."
+    )
+    st.code(
+        """SELECT ae.timestamp,
+       ae.type,
+       am.op    AS pam_operation,
+       am.acct  AS target_account,
+       am.exe   AS executable,
+       am.terminal
+FROM audit_event ae
+JOIN host h                ON h.host_id   = ae.host_id
+LEFT JOIN audit_message am ON am.event_id = ae.event_id
+WHERE h.host_key = 'intranet_server'
+  AND ae.timestamp BETWEEN '2022-01-24 04:37:30+00'::timestamptz
+                       AND '2022-01-24 04:38:15+00'::timestamptz
+ORDER BY ae.timestamp;""",
+        language="sql",
+    )
 
 
 st.divider()
