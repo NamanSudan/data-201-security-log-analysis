@@ -1,0 +1,39 @@
+\begin{abstract}
+We design, load, and exercise a third normal form (3NF) relational
+database over the AIT Log Data Set V2.0 (AIT-LDSv2.0), a publicly
+released enterprise security log corpus that captures a simulated
+multi-stage cyberattack across 22 networked hosts. The
+\texttt{russellmitchell} testbed slice contains 295{,}243 raw log lines
+across eight sources and 61{,}862 ground-truth attack labels spanning
+seven kill-chain phases. Our schema decomposes a heterogeneous mix of
+YAML, key-value \texttt{auditd}, and JSONL data into 22 normalized
+tables organized into three domains (host inventory, audit events,
+attack labels), enforced by primary and foreign key constraints in
+PostgreSQL 16. We articulate the normalization journey from staging
+tables (which preserve source-faithful 1NF violations) to 3NF using
+surrogate keys, lookup tables, and supertype/subtype decomposition of
+\texttt{auditd} records. On top of the loaded database we present a portfolio of 23 SQL query
+items (7 basic and 16 advanced, committed across 6 basic and 13
+advanced \texttt{.sql} files) that cover subqueries, common table
+expressions, window functions, multi-table joins of three or more
+tables, performance indexing with \texttt{EXPLAIN ANALYZE}, and a
+saved view. The portfolio answers concrete attack-investigation
+questions: from baseline service activity, to detection-rule
+effectiveness, to a CTE-and-window-function reconstruction of the
+privilege-escalation sequence on a single host that joins seven
+tables.
+We further demonstrate an indexing improvement on the incident-response
+access pattern (composite index
+\texttt{idx\_audit\_event\_host\_timestamp}, execution time 1.462~ms to
+0.640~ms, buffers 141 to 33), a saved view
+\texttt{v\_privilege\_escalation\_timeline} that collapses an
+eight-table cross-domain join into a single virtual relation, and an
+interactive Streamlit dashboard exposing nine visualizations (one
+filter-driven KPI panel and eight story panels) directly bound to
+these queries. Our findings show that exfiltration-related labels
+dominate the corpus by line count (53{,}000+ lines across two log
+sources), while privilege escalation, the most operationally critical
+phase, leaves only 82 labeled lines but spans five distinct log
+sources, illustrating why a relational schema with cross-source joins
+is more diagnostic than any single log file in isolation.
+\end{abstract}

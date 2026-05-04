@@ -1,0 +1,185 @@
+\section{Database Setup and Loading}
+\label{sec:dbsetup}
+
+\subsection{Stack}
+We use PostgreSQL 16 \cite{postgresql} running inside a single Docker
+container defined in \texttt{docker-compose.yml} \cite{docker}. Schema
+migrations are managed by Alembic \cite{alembic} so that any team
+member can rebuild the database from a clean state with a single
+command. Application code is Python 3.12 with SQLAlchemy ORM models
+for parsing and loading.
+
+\subsection{Repository Layout}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, frame=none, language={}]
+data-201-security-log-analysis/
+|-- alembic/              schema migrations
+|-- docker-compose.yml    Postgres 16
+|-- src/
+|   |-- models/           SQLAlchemy models
+|   |-- parsers/          raw -> dict parsers
+|   |-- loaders/          dict -> row loaders
+|   `-- dashboard/        Streamlit app + db.py
+|-- sql/
+|   |-- 3nf/              per-table CREATE TABLE
+|   |-- 3nf/_indexes.sql  canonical index DDL
+|   |-- 3nf/_views.sql    canonical view DDL
+|   |-- queries/basic/    6 basic .sql files
+|   `-- queries/advanced/ 13 advanced .sql files
+|-- notebooks/            10 exploration nbs
+|-- docs/                 schema, ERD, findings
+`-- report/               this report
+\end{lstlisting}
+
+\subsection{Reproducible Load}
+The full load runs in five commands from a clean clone of the
+repository:
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, frame=single]
+docker compose up -d                  # Postgres on :5432
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+alembic -c alembic/alembic.ini upgrade head
+python -m src.loaders.run_all
+\end{lstlisting}
+
+The migration chain creates 22 tables across staging and 3NF schemas;
+the loader script reads the raw \texttt{russellmitchell} files, runs
+the parsers in \texttt{src/parsers/}, and inserts rows in dependency
+order (host inventory first, then audit events, then attack labels).
+The loader is idempotent: re-running against an already-loaded database
+truncates and re-inserts each table inside a transaction, so the
+output is reproducible regardless of starting state.
+
+\subsection{Migration Head and Schema Objects}
+After \texttt{alembic upgrade head} the database carries revision
+\texttt{742e860d116f}, which adds two analytical objects on top of the
+22-table 3NF base:
+\begin{itemize}
+  \item Composite index
+    \texttt{idx\_audit\_event\_host\_timestamp} on
+    \texttt{audit\_event(host\_id, timestamp)}, the index that powers
+    the incident-response speedup documented in
+    Section~\ref{sec:explain}.
+  \item Saved view \texttt{v\_privilege\_escalation\_timeline}, an
+    eight-table cross-domain join filtered to
+    \texttt{attack\_phase.phase\_name = 'privilege\_escalation'} and
+    aggregated with \texttt{string\_agg}, used by both the dashboard
+    and the deep-dive query in Section~\ref{sec:view}.
+\end{itemize}
+A teammate can verify that both objects are present with one psql
+command:
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, frame=single]
+docker exec security-logs-dev psql -U security_logs_user \
+  -d security_logs \
+  -c "SELECT version_num FROM alembic_version;" \
+  -c "SELECT indexname FROM pg_indexes
+      WHERE tablename = 'audit_event'
+      ORDER BY indexname;" \
+  -c "SELECT viewname FROM pg_views
+      WHERE schemaname = 'public';"
+\end{lstlisting}
+
+Expected output: \texttt{version\_num = 742e860d116f},
+\texttt{idx\_audit\_event\_host\_timestamp} appears in the index list,
+and \texttt{v\_privilege\_escalation\_timeline} appears in the view
+list.
+
+\subsection{Final Row Counts}
+Table~\ref{tab:rowcounts} reports the final loaded row counts (verified
+2026-05-01 against the loaded database). Total across all 22 tables is
+roughly 439{,}998 rows. The largest single table is
+\texttt{labeled\_line\_rule} (184{,}651 rows: a per-rule annotation on
+labeled lines), closely followed by \texttt{labeled\_line\_label}
+(184{,}517 rows: the line-to-label many-to-many junction).
+
+\begin{table}[htbp]
+\caption{Final loaded row counts by domain (verified 2026-05-01).}
+\label{tab:rowcounts}
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Domain} & \textbf{Table} & \textbf{Rows} \\
+\midrule
+Host inventory   & host                       & 22       \\
+                 & host\_group                & 63       \\
+                 & host\_fqdn                 & 20       \\
+                 & host\_ipv4                 & 24       \\
+                 & host\_ipv6                 & 24       \\
+                 & host\_log\_config          & 66       \\
+                 & os\_release                & 2        \\
+\midrule
+Audit events     & audit\_event               & 3{,}048  \\
+                 & audit\_message             & 2{,}614  \\
+                 & audit\_pam\_event          & 2{,}055  \\
+                 & audit\_service\_event      & 555      \\
+                 & audit\_login\_event        & 410      \\
+                 & audit\_user\_login\_event  & 3        \\
+                 & audit\_user\_cmd\_event    & 1        \\
+                 & audit\_syscall\_event      & 8        \\
+                 & audit\_avc\_event          & 8        \\
+                 & audit\_proctitle\_event    & 8        \\
+\midrule
+Attack labels    & labeled\_line              & 61{,}862 \\
+                 & labeled\_line\_label       & 184{,}517 \\
+                 & labeled\_line\_rule        & 184{,}651 \\
+                 & attack\_label              & 22       \\
+                 & attack\_phase              & 7        \\
+\midrule
+\textbf{Total}   &                            & \textbf{$\approx$439{,}998} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Integrity Verification}
+After load we run a small set of integrity checks. The two most
+load-bearing checks are the orphan-FK count on \texttt{audit\_event}
+and the cross-domain consistency check between \texttt{labeled\_line}
+and \texttt{audit\_event} for rows where the labeled log is
+\texttt{audit.log}. Both return zero on the current database.
+
+\begin{lstlisting}[language=SQL,basicstyle=\ttfamily\scriptsize]
+-- Every audit_event references a real host (FK consistency).
+SELECT COUNT(*) AS orphans
+FROM audit_event ae
+LEFT JOIN host h ON h.host_id = ae.host_id
+WHERE h.host_id IS NULL;
+-- => 0 orphans
+
+-- Every labeled_line line_number that targets audit.log lands
+-- inside its host's audit_event range.
+SELECT COUNT(*) AS unmatched
+FROM labeled_line ll
+WHERE ll.source_log = 'audit.log'
+  AND NOT EXISTS (
+    SELECT 1 FROM audit_event ae
+    JOIN host h ON h.host_id = ae.host_id
+    WHERE h.host_key   = ll.source_host
+      AND ae.line_number = ll.line_number
+  );
+-- => 0 unmatched
+
+-- Subtype coverage: every audit_event has exactly one subtype row.
+WITH subtype_sum AS (
+  SELECT
+    (SELECT COUNT(*) FROM audit_pam_event)
+  + (SELECT COUNT(*) FROM audit_service_event)
+  + (SELECT COUNT(*) FROM audit_user_login_event)
+  + (SELECT COUNT(*) FROM audit_user_cmd_event)
+  + (SELECT COUNT(*) FROM audit_login_event)
+  + (SELECT COUNT(*) FROM audit_syscall_event)
+  + (SELECT COUNT(*) FROM audit_avc_event)
+  + (SELECT COUNT(*) FROM audit_proctitle_event)
+    AS subtype_total
+)
+SELECT (SELECT COUNT(*) FROM audit_event) AS total_events,
+       subtype_total AS sum_of_subtypes
+FROM   subtype_sum;
+-- => total_events = sum_of_subtypes = 3,048
+\end{lstlisting}
+
+The third check (subtype-coverage equality) is the practical proof
+that the supertype/subtype decomposition described in
+Section~\ref{sec:schema} is total and disjoint, which is the property
+that lets the report claim ``every audit event is exactly one
+subtype.''

@@ -1,0 +1,160 @@
+\appendices
+\section{Collaborative Writing and Version History Evidence}
+\label{app:collab}
+
+The technical-report rubric requires the report to ``show evidence of
+collaborative writing, not just a final PDF.'' For this project, that
+evidence comes from GitHub and Git. The report \texttt{.tex} sources,
+the SQL queries, the Streamlit dashboard, the Alembic migrations, and
+the schema documentation all live in the same project repository, and
+every commit carries author and timestamp metadata. The Git history
+therefore captures the version history, the per-author edit
+contributions, and the revision timeline that the rubric asks for, in
+a single auditable trail.
+
+Figure~\ref{fig:gitlog-report} reproduces a slice of the project
+\texttt{git log} that spans the report, SQL, dashboard, and schema
+work. The lifecycle covers the initial scaffolding through the final
+submission and shows commits from all three authors: Naman Sudan,
+River Roseveare-Hunt, and Ishaan Shetty.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/git_log_report.png}
+\caption{Git log across the project repository, covering the report,
+SQL queries, dashboard, and schema modules. The history shows
+contributions from Naman Sudan, River Roseveare-Hunt, and Ishaan
+Shetty across the project lifecycle.}
+\label{fig:gitlog-report}
+\end{figure}
+
+\section{Repository Map}
+\label{app:repo}
+The full project repository (frozen at the commit referenced on
+Canvas) is laid out as follows:
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, frame=none, language={}]
+data-201-security-log-analysis/
+|-- README.md             setup + dashboard guide
+|-- docker-compose.yml    Postgres 16
+|-- alembic/              schema migrations
+|                         (head 742e860d116f)
+|-- src/
+|   |-- models/           SQLAlchemy ORM models
+|   |-- parsers/          raw log parsers
+|   |-- loaders/          ETL pipelines
+|   `-- dashboard/        Streamlit app (Section 7)
+|       |-- app.py        KPI band + 8 story panels
+|       `-- db.py         SQLAlchemy engine helper
+|-- sql/
+|   |-- 3nf/              per-table CREATE TABLE
+|   |-- 3nf/_indexes.sql  performance indexes
+|   |-- 3nf/_views.sql    saved view
+|   |-- queries/basic/    6 basic .sql files
+|   `-- queries/advanced/ 13 advanced .sql files
+|-- notebooks/            10 exploration notebooks
+|-- docs/
+|   |-- schema/           3NF model + norm docs
+|   |-- er_diagrams/      drawio + exported PDF
+|   `-- data_exploration/ per-source findings
+|-- presentation/         mid + final decks
+`-- report/               this report (LaTeX)
+\end{lstlisting}
+
+\section{Exfiltration Trace on \texttt{internal\_share}}
+\label{app:exfil}
+For completeness, the exfiltration phase referenced in
+Section~\ref{sec:conclusion} is reproduced in
+Table~\ref{tab:exfil-trace}. The two \texttt{internal\_share} audit
+events (the \texttt{put} service start and stop) are returned by query
+A6 in the labels-and-audit join, and are echoed in the basic
+service-activity baseline (B6).
+
+\begin{table}[htbp]
+\caption{Audit-side exfiltration trace on \texttt{internal\_share}
+(timestamps in UTC).}
+\label{tab:exfil-trace}
+\centering
+\footnotesize
+\begin{tabular}{lll}
+\toprule
+\textbf{Host} & \textbf{Timestamp} & \textbf{Type} \\
+\midrule
+\texttt{internal\_share} & 2022-01-24 13:50:43 & \texttt{SERVICE\_START} \\
+\texttt{internal\_share} & 2022-01-24 13:50:51 & \texttt{SERVICE\_STOP}  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Beyond these two audit events, roughly 53{,}000
+\texttt{dnsteal.domain.match} firings appear in
+\path{internal_share/dns.log} over the same window. These firings are
+currently recorded only in the labels domain because
+\texttt{dns.log} is not yet loaded into a 3NF table (see Future Work
+in Section~\ref{sec:conclusion}).
+
+\section{Dashboard Panel Screenshots}
+\label{app:dashboard-panels}
+The Streamlit dashboard described in Section~\ref{sec:dashboard}
+exposes nine visualizations on a single page. Figure~\ref{fig:dashboard-overview}
+shows the top section (filter sidebar plus KPI band plus the start of
+panel 1). The remaining panels are split across four screenshots
+below, captured with the story-canon filter defaults applied.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/dashboard_overview_part_2.png}
+\caption{Panels 2 (foothold accumulation across
+\texttt{access.log.2}) and 3 (privilege-escalation timeline read from
+the saved view \texttt{v\_privilege\_escalation\_timeline}).}
+\label{fig:dash-part2}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/dashboard_overview_part_3.png}
+\caption{Panels 4 (where else the attack leaves traces, source spread
+across five log sources) and 5 (detection rules ranked by
+\texttt{lines\_triggered} inside the privilege-escalation phase).}
+\label{fig:dash-part3}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/dashboard_overview_part_4.png}
+\caption{Panels 6 (audit event types touched by the chain) and 7
+(busiest audit day on \texttt{intranet\_server}, with the attack day
+2022-01-24 highlighted), plus the start of panel 8.}
+\label{fig:dash-part4}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/dashboard_overview_part_5.png}
+\caption{Panel 8 (index improvement summary, with the
+\texttt{EXPLAIN ANALYZE} before/after numbers for the composite index
+\texttt{idx\_audit\_event\_host\_timestamp}).}
+\label{fig:dash-part5}
+\end{figure}
+
+\section{Reproducing Every Number in This Report}
+\label{app:repro}
+Every numeric claim in the report is reproducible from the loaded
+database. The mapping is:
+\begin{itemize}
+  \item Row counts (Table~\ref{tab:rowcounts}): \texttt{SELECT
+    COUNT(*) FROM <table>;} for each row.
+  \item Query results (Section~\ref{sec:sql}): paste the
+    \texttt{SELECT} from each subsection into psql.
+  \item EXPLAIN ANALYZE numbers (Section~\ref{sec:explain}): run
+    \texttt{advanced/naman\_explain\_index\_improvement.sql}
+    against the loaded database with Alembic at head
+    \texttt{742e860d116f}.
+  \item Dashboard KPI defaults (Table~\ref{tab:kpi-defaults}):
+    \texttt{streamlit run src/dashboard/app.py}, leave the
+    sidebar at story-canon defaults, read the four
+    \texttt{st.metric} cards.
+  \item Saved view contents (Section~\ref{sec:view}):
+    \texttt{SELECT *} \texttt{FROM v\_privilege\_escalation\_timeline
+    ORDER BY timestamp;}.
+\end{itemize}
