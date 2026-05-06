@@ -1,0 +1,26 @@
+# LaTeX auxiliary outputs - regenerated on every build, never commit them.
+*.aux
+*.bbl
+*.blg
+*.brf
+*.dvi
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+
+# Editor and OS noise.
+.DS_Store
+*.swp
+*~

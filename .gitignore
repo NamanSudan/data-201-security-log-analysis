@@ -168,3 +168,6 @@ alembic/versions/__pycache__/
 *.zip
 *.tar.gz
 *.7z
+
+# add /Users/namansudan/Desktop/sjsu/classes/data-201/data-201-security-log-analysis/presentation/final-presentation/DATA-201-Final-Presentation-Group-5-Security_Log_Analysis.pptx
+presentation/final-presentation/DATA-201-Final-Presentation-Group-5-Security_Log_Analysis.pptx

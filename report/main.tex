@@ -1,0 +1,91 @@
+% =============================================================================
+% DATA 201 - Final Technical Report
+% Group 5: Naman Sudan, River Roseveare-Hunt, Ishaan Shetty
+% Spring 2026, San Jose State University
+%
+% Compile order on Overleaf: pdflatex -> bibtex -> pdflatex -> pdflatex
+% Or just hit "Recompile" twice on Overleaf and the bibliography will resolve.
+% =============================================================================
+
+\documentclass[10pt,conference]{IEEEtran}
+
+% url package needs hyphens option set before it loads so \url and \path can
+% break long file paths at slash, dot, dash, and underscore in section 7.
+\PassOptionsToPackage{hyphens}{url}
+
+% Standard IEEE-friendly packages
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{url}
+\urlstyle{tt}
+\renewcommand{\UrlBreaks}{\do\/\do\.\do\-\do\_\do\(\do\)\do\,\do\;\do\:}
+\Urlmuskip=0mu plus 1mu\relax
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+% Loosen line breaking so long verbatim path strings (section 7 SQL filenames)
+% stop overflowing the IEEE column gutter. Combined with \UrlBreaks above and
+% \path{...} on the longest filenames, this clears the worst overflows.
+\setlength{\emergencystretch}{3em}
+
+% SQL listings setup (used in sections/06_sql_analysis.tex)
+\input{listings_sql_setup}
+
+% Replace the IEEEtran-conference auto-rendered em dash after "Abstract"
+% (the original definition writes \textit{\abstractname}---) with a colon
+% plus en-quad space. Pure typography override; semantic text unchanged.
+\makeatletter
+\def\abstract{\normalfont%
+  \if@twocolumn%
+    \@IEEEabskeysecsize\bfseries\textit{\abstractname}:\enskip\relax%
+  \else%
+    \bgroup\par\addvspace{0.5\baselineskip}\centering\vspace{-1.78ex}\@IEEEabskeysecsize\textbf{\abstractname}\par\addvspace{0.5\baselineskip}\egroup\quotation\@IEEEabskeysecsize%
+  \fi\@IEEEgobbleleadPARNLSP%
+}
+\makeatother
+
+\begin{document}
+
+\title{Reconstructing a Multi-Stage Cyberattack with a Relational Database:\\
+A 3NF Schema and SQL Analytics over the AIT-LDSv2.0 Log Corpus}
+
+\author{
+\IEEEauthorblockN{Naman Sudan, River Roseveare-Hunt, Ishaan Shetty}
+\IEEEauthorblockA{Department of Applied Data Science\\
+San Jose State University\\
+DATA 201, Spring 2026 (Group 5)\\
+\{naman.sudan, river.roseveare-hunt, ishaan.shetty\}@sjsu.edu}
+}
+
+\maketitle
+
+\input{sections/01_abstract}
+\input{sections/02_introduction}
+\input{sections/03_dataset}
+\input{sections/04_schema_normalization}
+\input{sections/05_database_setup}
+\input{sections/06_sql_analysis}
+\input{sections/07_dashboard}
+\input{sections/08_conclusion}
+\input{sections/09_references_ai}
+\input{sections/10_appendix}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

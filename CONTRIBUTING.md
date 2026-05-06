@@ -221,6 +221,44 @@ ruff format .
 mypy src/
 ```
 
+## CI/CD Pipeline
+
+### What GitHub Actions does
+
+CI runs automatically on **pull requests to `dev`** and on **pushes to `dev`** (after merge):
+
+- Ruff lint and format checks
+- Alembic migrations validated against an **ephemeral CI test database** (a Postgres container that lives and dies inside the GitHub Actions runner)
+- Unit tests run against the same test database
+- No real developer database is touched -- GitHub Actions has no access to your local Postgres
+
+### After merge to `dev` -- local steps
+
+Our databases are local-only (Docker on each teammate's machine). GitHub Actions cannot update them. After a PR is merged to `dev`, every teammate should run:
+
+```bash
+git checkout dev
+git pull origin dev
+alembic -c alembic/alembic.ini upgrade head
+```
+
+If migrations added new tables or columns and you want data populated:
+
+```bash
+# Run the relevant loader(s) for your local database
+# (loader scripts and instructions vary by table -- check the PR or ask in Slack)
+```
+
+### Deploy workflows (deferred)
+
+`deploy-dev.yml` and `deploy-prod.yml` exist but are **disabled** (`workflow_dispatch` only, no automatic triggers). They are placeholders for when/if the team sets up a cloud-hosted database or a self-hosted GitHub Actions runner. They will not run on any merge or push.
+
+### Branch protection
+
+- Direct pushes to `dev` are blocked; all changes go through pull requests
+- The `Test` status check must pass before merge
+- At least 1 approving review is required
+
 ## Questions?
 
 - Check existing Linear issues

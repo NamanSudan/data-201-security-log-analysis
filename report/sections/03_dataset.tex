@@ -1,0 +1,95 @@
+\section{Dataset and Data Processing}
+\label{sec:dataset}
+
+\subsection{Source}
+We use the \emph{russellmitchell} testbed slice of the AIT Log Data Set V2.0
+(AIT-LDSv2.0) \cite{landauer2022maintainable, ait2024dataset}. The corpus
+simulates a four-day attack window (January 21 to 25, 2022, UTC) on a 22-host
+enterprise network running a mix of Ubuntu and Debian distributions. The
+dataset is publicly available under a permissive research license at the
+URL given in the bibliography entry.
+
+\subsection{Scale and Heterogeneity}
+The \emph{russellmitchell} slice contains 295{,}243 raw log lines across
+eight source files on five hosts and 61{,}862 ground-truth attack labels
+spanning seven kill-chain phases (reconnaissance, initial access, privilege
+escalation, lateral movement, exfiltration, command and control,
+persistence). Forty-six unique attributes appear across log types. The
+corpus deliberately mixes formats to mirror real environments:
+\begin{itemize}
+  \item \textbf{YAML}: \texttt{processing/config/servers.yaml} encodes the
+    host inventory with multi-valued fields (\texttt{groups},
+    \texttt{fqdns}, \texttt{ipv4\_addresses}, \texttt{ipv6\_addresses}).
+  \item \textbf{Linux \texttt{auditd}} key-value records: 3{,}048 events
+    across two hosts (\texttt{intranet\_server} and
+    \texttt{internal\_share}), capturing PAM authentication, service
+    lifecycle, login, and command-execution traces.
+  \item \textbf{JSONL labels}: 8 files containing per-line label
+    annotations across 5 hosts, totalling 61{,}862 labeled events with 22
+    distinct label types.
+  \item \textbf{Apache combined-log}, \textbf{OpenVPN syslog},
+    \textbf{dnsmasq}, \textbf{system auth} formats are present in the
+    corpus but out of scope for the iteration documented here.
+\end{itemize}
+
+\subsection{Why This Dataset}
+Two properties make AIT-LDSv2.0 a strong fit for a relational-database
+project. First, the corpus is \emph{inherently denormalized}: multi-valued
+fields, key-value blobs, and overlapping record types force a real
+normalization exercise rather than a perfunctory 1NF pass. Second, the
+ground-truth labels enable cross-source queries with verifiable answers:
+``which detection rules fire on the privilege escalation phase'' is a
+question with a numeric answer the database can compute, not a subjective
+judgment call.
+
+\subsection{Data Quality and Cleaning}
+The raw corpus has three classes of cleaning concerns that we document and
+address explicitly during ETL (Section \ref{sec:dbsetup}):
+\begin{enumerate}
+  \item \textbf{Multi-valued fields} (1NF violations) in the host YAML and
+    in the \texttt{auditd} \texttt{msg} blob. We preserve them in staging
+    tables (source-faithful) and decompose them into child tables during
+    the staging-to-3NF transformation.
+  \item \textbf{Sentinel values}: \texttt{auid}/\texttt{ses}=4294967295
+    represent ``unset.'' We preserve the raw value but document its
+    semantics so query authors do not treat it as a real session.
+  \item \textbf{Sparse columns from heterogeneous record types}: a single
+    \texttt{auditd} log file contains $\geq 8$ structurally different
+    record types (LOGIN, SYSCALL, AVC, PROCTITLE, PAM events, etc.). A
+    flat-table representation would have $\sim 80\%$ NULL columns. We
+    apply supertype/subtype decomposition (Section \ref{sec:schema}) to
+    push subtype-specific attributes out of the supertype.
+\end{enumerate}
+
+\subsection{Coverage Summary}
+Table~\ref{tab:source-coverage} groups the eight \texttt{russellmitchell}
+source files by host and gives the labeled-line count and the dominant
+attack phase recorded against each one. The table makes the
+foothold-to-escalate story on \texttt{intranet\_server} visible at a
+glance, and reminds the reader that the exfiltration evidence on
+\texttt{internal\_share} also belongs to the same attack chain even
+though it lives on a different host.
+
+\begin{table}[htbp]
+\caption{Labeled-line coverage by source file. The first six rows are the
+audit and host-side evidence; the final row is the bulk DNS-tunneling
+channel that drives the corpus-wide line count.}
+\label{tab:source-coverage}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrl}
+\toprule
+\textbf{Host} & \textbf{Source log} & \textbf{Lines} & \textbf{Dominant phase} \\
+\midrule
+intranet\_server & access.log.2 & 7{,}691           & initial\_access \\
+intranet\_server & auth.log     & 8                 & privilege\_escalation \\
+intranet\_server & audit.log    & 9                 & privilege\_escalation \\
+internal\_share  & audit.log    & 2                 & exfiltration \\
+inet-firewall    & dnsmasq.log  & 12                & privilege\_escalation \\
+monitoring       & cpu.log      & 49                & privilege\_escalation \\
+\midrule
+internal\_share  & dns.log      & $\approx$53{,}000 & exfiltration \\
+\bottomrule
+\end{tabular}
+\end{table}

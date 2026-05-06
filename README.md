@@ -72,6 +72,52 @@ Analysis of a simulated enterprise network under attack using the Austrian Insti
    python -c "from sqlalchemy import create_engine; engine = create_engine('postgresql://security_logs_user:password@localhost:5432/security_logs'); print('Connected!' if engine.connect() else 'Failed')"
    ```
 
+## Streamlit Dashboard
+
+Single-page dashboard that tells the privilege-escalation-on-`intranet_server` story across nine panels (KPI cards, seven story panels, one static EXPLAIN/index summary). Panels 3, 6, and 8 each combine multiple views (chart plus table, chart plus chips, and chart plus workload-query reference). Reads directly from PostgreSQL using the same connection settings the loaders use.
+
+### Prerequisites
+- Steps 1 to 5 of Quick Start completed (Docker container `security-logs-dev` healthy on port 5432, Alembic at head, Python deps installed).
+- Repo-root `.env` populated with `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`.
+
+### Run on macOS / Linux
+```bash
+# From repo root
+source venv/bin/activate
+venv/bin/streamlit run src/dashboard/app.py
+```
+Open the URL Streamlit prints (default `http://localhost:8501`). Sidebar filters drive the four KPI cards; the seven story panels and the index-improvement summary are canonical and stay fixed.
+
+### Run on Windows (PowerShell)
+```powershell
+# From repo root
+.\venv\Scripts\Activate.ps1
+.\venv\Scripts\streamlit.exe run src\dashboard\app.py
+```
+If `streamlit.exe` is not on `PATH` after activation, fall back to `python -m streamlit run src\dashboard\app.py`.
+
+### What you should see
+- **Filtered key counts**: `Labeled lines = 7,748`, `Distinct attack labels = 6`, `Source logs touched = 4`, `Audit events on host = 9` (with default filters).
+- **1. Foothold-to-escalate journey on access.log.2** (NTILE bar)
+- **2. Foothold accumulation across access.log.2** (cumulative line + per-bucket bars)
+- **3. Privilege escalation timeline (su then sudo)** (time scatter of the 9 events plus the underlying 9-row table from `v_privilege_escalation_timeline`)
+- **4. Where else does the attack leave traces** (5-row source spread bar)
+- **5. Detection rules ranked by lines triggered** (10-row horizontal bar)
+- **6. Audit event types touched by the chain** (per-type event-count bar plus 8 metric chips)
+- **7. Busiest audit day on intranet_server** (4-day categorical bar, attack day highlighted)
+- **8. Index improvement on the incident-response query** (1.462 ms to 0.640 ms before/after bar, summary table, and a collapsible workload-query reference)
+
+### Troubleshooting
+- "Could not connect to PostgreSQL" banner: confirm `docker compose ps` shows `security-logs-dev` healthy and that `.env` is in the repo root.
+- Empty or zero KPIs: run `alembic -c alembic/alembic.ini current` and confirm the head includes revision `742e860d116f` (the migration that creates `v_privilege_escalation_timeline` and `idx_audit_event_host_timestamp`).
+- Pre-PR lint pass for any dashboard edits:
+  ```bash
+  venv/bin/ruff check src/dashboard --fix
+  venv/bin/ruff format src/dashboard
+  venv/bin/ruff check src/dashboard
+  venv/bin/ruff format --check src/dashboard
+  ```
+
 ## Project Structure
 
 ```
@@ -82,6 +128,9 @@ data-201-security-log-analysis/
 ├── sql/                   # SQL scripts and queries
 ├── notebooks/             # Jupyter notebooks for exploration
 ├── src/                   # Python source code
+│   ├── dashboard/         # Streamlit dashboard (app.py, db.py)
+│   ├── loaders/           # Staging and 3NF loaders
+│   ├── models/            # SQLAlchemy models
 │   └── parsers/           # Log parsing modules
 ├── tests/                 # Test suite
 └── presentation/          # Slides and demo materials

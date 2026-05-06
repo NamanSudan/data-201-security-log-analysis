@@ -1,0 +1,117 @@
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+\subsection{Findings}
+Three findings stand out from the analysis in
+Section~\ref{sec:sql}:
+\begin{enumerate}
+  \item \textbf{Volume is not coverage.} Exfiltration labels dominate
+    the corpus by raw line count (roughly 53{,}000 labeled lines),
+    but this is an artefact of the DNS-tunneling phase emitting one
+    labeled line per DNS query. The privilege-escalation phase has
+    only 82 labeled lines but spans five distinct log sources, and
+    the operational severity of an account takeover is incomparably
+    higher. A detection program optimised for label volume would
+    miss the most consequential phase entirely.
+  \item \textbf{Cross-source joins are diagnostic.} Queries A4 and
+    A6, plus the saved view
+    \texttt{v\_privilege\_escalation\_timeline}, reconstruct the
+    privilege-escalation sequence and the cross-host lateral movement
+    using foreign-key joins between audit events and attack labels.
+    Neither view is recoverable from any single log file in
+    isolation; the database makes both legible in a single ordering.
+  \item \textbf{Timing-only detection is feasible for short bursts.}
+    Query A7 uses only \texttt{LAG} over event timestamps and detects
+    two distinct attack bursts on \texttt{intranet\_server} without
+    consulting a single label. The two-burst structure recovered from
+    timing alone matches the structure recovered from labels in
+    query A4 exactly. This is a useful unsupervised signal that
+    complements rule-based detection.
+\end{enumerate}
+
+\subsection{What Happened Next: Exfiltration on \texttt{internal\_share}}
+The deck and the report focus on the
+\texttt{initial\_access}-into-\texttt{privilege\_escalation} narrative
+on \texttt{intranet\_server}, but the dataset's full attack chain
+continues for several more hours and migrates to a second host. At
+13:50 UTC on the same day (about nine hours after the
+\texttt{sudo cat /etc/shadow} burst), \texttt{internal\_share} emits
+two audit events for a service called \texttt{put} that starts and
+stops within seconds. Query A6 surfaces both events in the same
+ordering as the privilege-escalation chain, and the basic
+service-activity baseline (B6) confirms that the \texttt{put} service
+has no other appearances in the audit data. In the labels domain, the
+DNS-tunneling rule \texttt{dnsteal.domain.match} fires roughly
+53{,}000 times on the same window, indicating that
+\texttt{/etc/shadow} or downstream credentials material was
+exfiltrated through DNS queries to the attacker-controlled domain.
+The report does not deep-dive the exfiltration phase further: the
+loaded slice only contains the audit-domain side of the
+exfiltration story, and the more interesting DNS-tunneling channel
+lives in a log type that future work will load into the schema (see
+Future Work below). The exfiltration phase appears in the dashboard's
+KPI band when the user widens the host filter to include
+\texttt{internal\_share} and is reproduced in the appendix.
+
+\subsection{Limitations}
+\begin{itemize}
+  \item \textbf{Single testbed slice.} The current iteration covers
+    the \texttt{russellmitchell} testbed only. The other four
+    testbeds in AIT-LDSv2.0 share the same schema and could be
+    appended with no model changes; the work is loader-only.
+  \item \textbf{Out-of-scope log domains.} DNS, OpenVPN, Apache, and
+    system auth logs were explored in notebooks but are not loaded
+    into the relational schema. Bringing them in would lengthen the
+    SQL portfolio (especially for the exfiltration phase) but does
+    not change the schema design. The DNS-tunneling channel, in
+    particular, is the natural next domain to add: it is the
+    highest-line-count phase of the attack and the report currently
+    only describes it via the labels domain.
+  \item \textbf{Single-machine deployment.} The PostgreSQL container
+    runs on one developer machine. The current corpus is small enough
+    that this is fine; scaling to the full AIT-LDSv2.0 with all
+    testbeds and all log domains would push past a single instance
+    and invite the distributed-SQL discussion.
+  \item \textbf{Static dashboard scope.} The Streamlit dashboard
+    currently shows aggregate views, a filterable timeline, and a
+    static EXPLAIN summary. A real SOC dashboard would also support
+    time-window scrubbing, alert drill-down, and per-rule
+    false-positive review. We treat these as future work rather than
+    as gaps.
+  \item \textbf{Story-canonical defaults.} The story panels are
+    pinned to the \texttt{intranet\_server} narrative so the
+    audience does not get lost while experimenting with filters.
+    This keeps the dashboard reproducible for grading but means a
+    user who wants to investigate a different host has to read the
+    SQL and run it manually rather than re-using the UI.
+\end{itemize}
+
+\subsection{Future Work}
+Concrete and bounded next steps, in order of priority:
+\begin{enumerate}
+  \item \textbf{Load the remaining four testbeds.} The schema is
+    testbed-agnostic; the loader needs a single configuration change
+    and an additional run. Brings the labeled corpus from roughly
+    62{,}000 to roughly 300{,}000 rows.
+  \item \textbf{Add DNS and OpenVPN domains.} The DNS-tunneling
+    exfiltration is severely under-represented in the audit-only
+    schema. Adding \texttt{dns\_query} and \texttt{vpn\_session}
+    tables (with obvious foreign keys to \texttt{host}) would let
+    queries like A14 (detection-rule effectiveness) compare
+    \texttt{dnsteal.*} rules against audit-based rules on equal
+    footing, on the same population.
+  \item \textbf{Materialize \texttt{v\_privilege\_escalation\_timeline}.}
+    As the corpus grows, the underlying view will become a query-time
+    bottleneck. Promoting it to a materialized view with an
+    incremental-refresh schedule is a straightforward optimisation
+    and provides natural snapshot semantics for the report.
+  \item \textbf{Per-host story panels.} The current dashboard pins
+    panels 1 to 8 to \texttt{intranet\_server}. Generalising the
+    panel SQL so the host filter actually drives the story panels
+    (with the privilege-escalation arc replaced by the relevant arc
+    for whichever host the user picks) would make the dashboard a
+    real investigation tool rather than a curated demo.
+  \item \textbf{Productionize the dashboard.} Add user
+    authentication, a time-range picker, and a Slack-friendly export
+    of the attack timeline. None of these require schema changes.
+\end{enumerate}
